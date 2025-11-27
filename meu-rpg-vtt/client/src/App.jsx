@@ -1,49 +1,51 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import './App.css'; 
+import './App.css';
 
-// Componentes
 import TopBar from './components/TopBar';
 import ChatSidebar from './components/ChatSidebar';
 import GameMap from './components/GameMap';
+import LoginPage from './components/LoginPage'; // <--- IMPORTANTE
 
-// Conexão Socket (Fora do componente para não reconectar a cada render)
-const socket = io(); //ngrok
+const socket = io();
 
 function App() {
-  const [role, setRole] = useState(null); // 'MESTRE' ou 'JOGADOR'
-  const [username, setUsername] = useState('');
+  const [user, setUser] = useState(null); // { username, role, token }
 
-  // TELA DE "LOGIN" FAKE - aprimorar
-  if (!role) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '100px' }}>
-        <h1>Quem é você?</h1>
-        <input 
-          placeholder="Seu Nome" 
-          value={username} 
-          onChange={e => setUsername(e.target.value)}
-          style={{ padding: '10px', marginBottom: '20px' }}
-        />
-        <div style={{ display: 'flex', gap: '20px' }}>
-          <button onClick={() => setRole('JOGADOR')}>Entrar como JOGADOR</button>
-          <button onClick={() => setRole('MESTRE')}>Entrar como MESTRE</button>
-        </div>
-      </div>
-    );
+  // Ao carregar, verifica se já tem login salvo no navegador
+  useEffect(() => {
+    const savedUser = localStorage.getItem('rpg_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    localStorage.setItem('rpg_user', JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('rpg_user');
+  };
+
+  // Se não tiver usuário, mostra tela de Login
+  if (!user) {
+    return <LoginPage onLogin={handleLogin} />;
   }
 
-  // A INTERFACE PRINCIPAL
   return (
     <div className="app-container">
-      {/* 1. Barra do Topo */}
-      <TopBar username={username || 'Anônimo'} role={role} />
+      {/* Passamos o handleLogout para poder sair */}
+      <div style={{position: 'absolute', top: 10, right: 10, zIndex: 20}}>
+          <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Sair</button>
+      </div>
+
+      <TopBar username={user.username} role={user.role} />
 
       <div className="main-content">
-        {/* 2. O Mapa (Centro) */}
         <GameMap />
-
-        {/* 3. O Chat (Direita) */}
         <ChatSidebar />
       </div>
     </div>

@@ -1,6 +1,6 @@
 # RPG Virtual Tabletop (VTT)
 
-A high-performance, real-time Virtual Tabletop (VTT) application designed for tabletop RPG sessions. This project allows Game Masters to manage maps and grids while players interact with tokens in real-time, leveraging WebSockets for instant synchronization.
+A real-time Virtual Tabletop (VTT) application designed for tabletop RPG sessions. This project allows Game Masters to manage maps and grids while players interact with tokens in real-time, leveraging WebSockets for instant synchronization.
 
 ## Tech Stack
 
@@ -42,15 +42,14 @@ npx nodemon index.js
 **Expose to the Internet With the server running, open a new terminal and initialize ngrok:**
 ngrok http 3001
 
-# Project Structure
-meu-rpg-vtt/
-├── client/              # React Application
-│   ├── dist/            # Compiled production assets
-│   ├── src/
-│   │   ├── components/  # UI Components (Chat, HUD, Sidebar)
-│   │   ├── game/        # Canvas/Konva logic (Grid, Tokens)
-│   │   └── App.jsx      # Root Component
-│
-└── server/              # Node.js Application
-    ├── index.js         # Entry point & Socket.io configuration
-    └── package.json
+# installing
+**server file**
+npm init -y
+npm install express socket.io cors
+npm install --save-dev nodemon
+npm install uuid
+
+**client file**
+npm create vite@latest client -- --template react
+npm install 
+npm install konva react-konva use-image socket.io-client

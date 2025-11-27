@@ -3,40 +3,39 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const routes = require('./routes'); // <--- Importa as rotas
 
 const app = express();
-app.use(cors());
 
-//const server = http.createServer(app);
-//arquivos do React (na pasta ../client/dist)
+app.use(cors());
+app.use(express.json());
+
+// Usa todas as rotas definidas no arquivo routes.js
+app.use('/api', routes); // Prefixo /api para ficar organizado (ex: /api/login)
+
+// Configuração Frontend Estático
 const clientPath = path.join(__dirname, '../client/dist');
 app.use(express.static(clientPath));
 
+// Configuração Socket.io
 const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
 
-// Configuração do Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: "*", //padrão do Vite
-    methods: ["GET", "POST"]
-  }
-});
-
-// O que acontece quando alguém conecta
 io.on('connection', (socket) => {
-  console.log(`✅ Usuário conectado! ID: ${socket.id}`);
-
-  // O servidor pode ouvir eventos aqui
-  socket.on('disconnect', () => {
-    console.log(`❌ Usuário desconectado! ID: ${socket.id}`);
+  console.log(`Socket conectado: ${socket.id}`);
+  
+  // Exemplo: Entrar em uma sala específica da mesa
+  socket.on('join_room', (gameId) => {
+    socket.join(gameId);
+    console.log(`Socket ${socket.id} entrou na mesa ${gameId}`);
   });
 });
 
+// Qualquer rota não-API manda pro React
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(clientPath, 'index.html'));
 });
 
-// Inicia o servidor na porta 3001
 server.listen(3001, () => {
-  console.log('🚀 SERVIDOR RODANDO NA PORTA 3001');
+  console.log('🚀 SERVIDOR RODANDO NA 3001');
 });
