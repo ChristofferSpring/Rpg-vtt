@@ -1,7 +1,13 @@
 import React from 'react';
 import { Stage, Layer, Text } from 'react-konva';
 
-export default function GameMap() {
+
+
+export default function GameMap({user,onJoinGame}) {
+  const HandleLeave = () => {
+  //voltar
+  onJoinGame(null);
+  };
   return (
     <div className="map-area">
       {/* O componente Stage do Konva será inserido aqui depois.
@@ -16,12 +22,12 @@ export default function GameMap() {
       </div>
 
       {/* Exemplo do botão flutuante dentro da área do mapa */}
-      <FloatingMenu />
+      <FloatingMenu onExit={HandleLeave}/>
     </div>
   );
 }
 
-function FloatingMenu() {
+function FloatingMenu({onExit}) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -34,6 +40,9 @@ function FloatingMenu() {
           <div>🛠️ Ferramentas</div>
           <div>🎲 Dados</div>
           <div>📏 Régua</div>
+          <div> 
+            <button onClick={onExit}> voltar </button>
+          </div>
         </div>
       )}
       <button 

@@ -11,18 +11,20 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     setError('');
 
-    const endpoint = isRegister ? '/register' : '/login';
+    const endpoint = isRegister ? '/api/register' : '/api/login';
+    // const endpoint = isRegister ? '/register' : '/login';
     // Se estiver em localhost dev (5173), precisa apontar pro 3001. 
     // Em produção (ngrok), a URL relativa funciona.
     const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
 
     try {
+      console.log(`Tentando conectar em: ${baseUrl}${endpoint}`)
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password, role })
       });
-
+      
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.error || 'Erro na requisição');
@@ -48,7 +50,7 @@ export default function LoginPage({ onLogin }) {
         padding: '40px', background: '#2d3748', borderRadius: '8px', 
         display: 'flex', flexDirection: 'column', gap: '15px', width: '300px'
       }}>
-        <h2>{isRegister ? 'Criar Conta' : 'Login RPG'}</h2>
+        <h2>{isRegister ? 'Criar Conta' : 'Login RPG4v'}</h2>
         
         {error && <div style={{ color: '#fc8181' }}>{error}</div>}
 
@@ -63,13 +65,6 @@ export default function LoginPage({ onLogin }) {
           value={password} onChange={e => setPassword(e.target.value)}
           style={{ padding: '10px' }}
         />
-
-        {isRegister && (
-          <select value={role} onChange={e => setRole(e.target.value)} style={{ padding: '10px' }}>
-            <option value="JOGADOR">Jogador</option>
-            <option value="MESTRE">Mestre</option>
-          </select>
-        )}
 
         <button type="submit" style={{ 
           padding: '10px', background: '#3182ce', color: 'white', border: 'none', cursor: 'pointer' 
