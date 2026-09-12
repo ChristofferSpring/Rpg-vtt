@@ -8,7 +8,14 @@ const routes = require('./routes');
 
 const app = express();
 
-app.use(cors());
+// Only matters for cross-origin requests (e.g. Vite dev server on :5173
+// talking to this API on :3001). The production build is served from
+// this same origin, so it never hits this check.
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim());
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // Mounts all routes defined in routes.js
@@ -20,7 +27,7 @@ app.use(express.static(clientPath));
 
 // Socket.io config
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
+const io = new Server(server, { cors: { origin: allowedOrigins, methods: ["GET", "POST"] } });
 
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);

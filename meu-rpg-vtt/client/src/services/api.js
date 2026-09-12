@@ -1,4 +1,5 @@
-const BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+const BASE_URL = import.meta.env.VITE_API_URL
+  || (window.location.hostname === 'localhost' ? 'http://localhost:3001' : '');
 
 function getToken() {
   try {
@@ -19,6 +20,12 @@ async function request(path, options = {}) {
 
   const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   const data = await response.json().catch(() => ({}));
+
+  if (response.status === 401 && token) {
+    // Session token expired or was rejected: drop it and force a fresh login
+    localStorage.removeItem('rpg_user');
+    window.location.reload();
+  }
 
   if (!response.ok) throw new Error(data.error || 'Request failed');
   return data;
