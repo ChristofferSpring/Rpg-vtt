@@ -2,7 +2,8 @@ const { Game, User, UserGame } = require('../database/db');
 const { v4: uuidv4 } = require('uuid'); // Instale: npm install uuid
 
 exports.createGame = async (req, res) => {
-  const { name, userId } = req.body;
+  const { name } = req.body;
+  const userId = req.userId;
   try {
     // 1. Cria a mesa
     const newGame = await Game.create({
@@ -24,7 +25,7 @@ exports.createGame = async (req, res) => {
 };
 
 exports.listMyGames = async (req, res) => {
-  const { userId } = req.query; // Pega da URL: /my-games?userId=1
+  const userId = req.userId;
   try {
     const user = await User.findByPk(userId, {
       include: {
@@ -39,7 +40,8 @@ exports.listMyGames = async (req, res) => {
 };
 
 exports.joinGame = async (req, res) => {
-  const { userId, inviteCode } = req.body;
+  const { inviteCode } = req.body;
+  const userId = req.userId;
   try {
     const game = await Game.findOne({ where: { inviteCode } });
     if (!game) return res.status(404).json({ error: 'Mesa não encontrada' });

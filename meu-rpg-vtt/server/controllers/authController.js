@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../database/db');
 
-const SECRET = 'minha_chave_secreta'; // Idealmente no .env
+const SECRET = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
   try {

@@ -36,6 +36,9 @@ Game.hasMany(UserGame);
 UserGame.belongsTo(User);
 UserGame.belongsTo(Game);
 
-sequelize.sync({ alter: true }); // 'alter: true' atualiza tabelas existentes sem apagar dados
+// alter:true força reconstrução de tabelas no SQLite (drop+recria) a cada boot,
+// o que quebra com FOREIGN KEY constraint assim que há tabelas relacionadas.
+// Schema já criado só precisa existir; mudanças de coluna devem virar migration.
+sequelize.sync();
 
 module.exports = { sequelize, User, Game, UserGame };

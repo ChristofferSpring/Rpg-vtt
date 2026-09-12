@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -36,6 +37,7 @@ app.get(/.*/, (req, res) => {
   res.sendFile(path.join(clientPath, 'index.html'));
 });
 
-server.listen(3001, () => {
-  console.log('🚀 SERVIDOR RODANDO NA 3001');
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`🚀 SERVIDOR RODANDO NA ${PORT}`);
 });

@@ -1,40 +1,24 @@
 import React, { useState } from 'react';
+import { api } from '../services/api';
 
 export default function LoginPage({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('JOGADOR');
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    const endpoint = isRegister ? '/api/register' : '/api/login';
-    // const endpoint = isRegister ? '/register' : '/login';
-    // Se estiver em localhost dev (5173), precisa apontar pro 3001. 
-    // Em produção (ngrok), a URL relativa funciona.
-    const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
-
     try {
-      console.log(`Tentando conectar em: ${baseUrl}${endpoint}`)
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role })
-      });
-      
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || 'Erro na requisição');
-
       if (isRegister) {
+        await api.register(username, password);
         alert('Conta criada! Agora faça login.');
         setIsRegister(false);
       } else {
-        // Login com sucesso
-        onLogin(data); // data contém { token, username, role }
+        const data = await api.login(username, password);
+        onLogin(data); // data contém { token, username, userId }
       }
     } catch (err) {
       setError(err.message);

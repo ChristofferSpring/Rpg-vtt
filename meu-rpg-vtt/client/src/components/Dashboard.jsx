@@ -1,33 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 // Recebemos "user" (para saber quem somos) e "onJoinGame" (uma função para avisar o App que escolhemos uma mesa)
 export default function Dashboard({ user, onJoinGame }) {
   const [newGameName, setNewGameName] = useState('');
+  const [joinCode, setJoinCode] = useState('');
   const [myGames, setMyGames] = useState([]);  // -- AREA DE ESTADO (Memória do componente) --
 
-  const fetchGames = () => {
-    const idDoUsuario = user.userId || user.id;
-    if (!user || !idDoUsuario) return;
-
-    // --- CORREÇÃO: Definir quem é o servidor ---
-    const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
-
-    // --- CORREÇÃO: Usar a baseUrl no fetch ---
-    fetch(`${baseUrl}/api/games/my-games?userId=${idDoUsuario}`)
-      .then(response => {
-        // Se a resposta não for ok, lança erro para cair no catch
-        if (!response.ok) throw new Error('Falha ao buscar jogos');
-        return response.json();
-      })
-      .then(data => {
-        console.log("Jogos atualizados:", data);
-        // Garantia extra: Se vier null ou undefined, seta array vazio para não quebrar o .map
-        setMyGames(Array.isArray(data) ? data : []); 
-      })
-      .catch(err => console.error("Erro ao buscar jogos:", err));
+  const fetchGames = async () => {
+    try {
+      const data = await api.myGames();
+      setMyGames(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Erro ao buscar jogos:", err);
+    }
   };
 
-  // --- MUDANÇA 2: O useEffect agora só chama a função acima ---
   useEffect(() => {
     fetchGames();
   }, [user]);
@@ -42,39 +30,36 @@ const handleEnterGame = (gameOriginal) => {
   // Agora mandamos para o App.jsx
   onJoinGame(gamePronto);
 };
-  const handleCreateGame = async (e) => {
+  const handleCreateGame = async () => {
     if (newGameName.trim() === '') {
-        alert('Digite um nome para a mesa!');
-        return;
+      alert('Digite um nome para a mesa!');
+      return;
     }
-    const endpoint = '/api/games/create';
-    // Se estiver em localhost dev (5173), precisa apontar pro 3001. 
-    // Em produção (ngrok), a URL relativa funciona.
-    const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
 
     try {
-      console.log(`Tentando conectar em: ${baseUrl}${endpoint}`)
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({name: newGameName,userId: user.userId || user.id})
-      });
-      
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || 'Erro na requisição');
-
+      const data = await api.createGame(newGameName);
       alert(`Mesa "${data.name}" criada com sucesso!`);
-      
-      setNewGameName(''); // Limpa o campo de texto
-      fetchGames();       // Chama a função da MUDANÇA 1 para recarregar a lista
-
+      setNewGameName('');
+      fetchGames();
     } catch (err) {
-      console.error(err);
       alert('Erro ao criar mesa: ' + err.message);
     }
+  };
 
-  }
+  const handleJoinGame = async () => {
+    if (joinCode.trim() === '') {
+      alert('Digite um código de convite!');
+      return;
+    }
+
+    try {
+      await api.joinGame(joinCode.trim());
+      setJoinCode('');
+      fetchGames();
+    } catch (err) {
+      alert('Erro ao entrar na mesa: ' + err.message);
+    }
+  };
  return (
     <div style={{ padding: '20px', color: 'white' }}>
       
@@ -141,8 +126,14 @@ const handleEnterGame = (gameOriginal) => {
           {/* ENTRAR COM CÓDIGO */}
           <div style={{ background: '#2d3748', padding: '15px', borderRadius: '8px' }}>
             <h4>🔗 Entrar via Código</h4>
-            <input type="text" placeholder="Código (UUID)" style={{ width: '100%', marginBottom: '10px', padding: '5px' }} />
-            <button style={{ width: '100%', padding: '5px' }}>Entrar</button>
+            <input
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              type="text"
+              placeholder="Código (UUID)"
+              style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
+            />
+            <button onClick={handleJoinGame} style={{ width: '100%', padding: '5px', cursor: 'pointer' }}>Entrar</button>
           </div>
 
         </section>

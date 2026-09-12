@@ -12,15 +12,18 @@ const socket = io();
 function App() {
   const [currentGame, setCurrentGame] = useState(null);
 
-  const [user, setUser] = useState(null); // { username, role, token }
-
-  // Ao carregar, verifica se já tem login salvo no navegador
-  useEffect(() => {
+  // Login salvo no navegador já entra como estado inicial (evita re-render extra)
+  const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('rpg_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  // Entra na sala socket da mesa atual (servidor espera o evento 'join_room')
+  useEffect(() => {
+    if (currentGame) {
+      socket.emit('join_room', currentGame.id);
     }
-  }, []);
+  }, [currentGame]);
 
   const handleLogin = (userData) => {
     setUser(userData);
