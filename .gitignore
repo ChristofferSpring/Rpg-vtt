@@ -8,3 +8,4 @@ logs
 *.sqlite
 *.sqlite.bak
 .DS_Store
+.worktrees
