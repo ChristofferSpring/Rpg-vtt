@@ -5,13 +5,13 @@ const authController = require('./controllers/authController');
 const gameController = require('./controllers/gameController');
 const authMiddleware = require('./middleware/authMiddleware');
 
-// Rotas de Auth
+// Auth routes
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 
-// Rotas de Game (protegidas: exigem token)
-router.post('/games/create', authMiddleware, gameController.createGame); // Criar mesa
-router.post('/games/join', authMiddleware, gameController.joinGame);     // Entrar com código
-router.get('/games/my-games', authMiddleware, gameController.listMyGames); // Listar minhas mesas
+// Game routes (protected: require a token)
+router.post('/games/create', authMiddleware, gameController.createGame); // Create a game
+router.post('/games/join', authMiddleware, gameController.joinGame);     // Join with a code
+router.get('/games/my-games', authMiddleware, gameController.listMyGames); // List my games
 
 module.exports = router;

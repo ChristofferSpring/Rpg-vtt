@@ -4,19 +4,19 @@ export default function ChatSidebar() {
   return (
     <div className="chat-sidebar">
       <div style={{ padding: '10px', borderBottom: '1px solid #4a5568' }}>
-        <strong>Chat da Mesa</strong>
-      </div>
-      
-      {/* Área das mensagens (Cresce) */}
-      <div style={{ flex: 1, padding: '10px' }}>
-        <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Bem-vindo à sala...</p>
+        <strong>Game Chat</strong>
       </div>
 
-      {/* Input de texto (Fixo embaixo) */}
+      {/* Messages area (grows) */}
+      <div style={{ flex: 1, padding: '10px' }}>
+        <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Welcome to the room...</p>
+      </div>
+
+      {/* Text input (fixed at the bottom) */}
       <div style={{ padding: '10px' }}>
-        <input 
-          type="text" 
-          placeholder="Digite sua mensagem..." 
+        <input
+          type="text"
+          placeholder="Type your message..."
           style={{ width: '100%', padding: '8px', borderRadius: '4px', border: 'none' }} 
         />
       </div>

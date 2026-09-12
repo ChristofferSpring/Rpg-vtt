@@ -11,7 +11,7 @@ exports.register = async (req, res) => {
     const user = await User.create({ username, password: hashedPassword });
     res.json({ id: user.id, username: user.username });
   } catch (error) {
-    res.status(400).json({ error: 'Erro ao registrar. Usuário já existe?' });
+    res.status(400).json({ error: 'Error registering. Does the user already exist?' });
   }
 };
 
@@ -21,12 +21,12 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ where: { username } });
     
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign({ id: user.id, username: user.username }, SECRET);
     res.json({ token, username: user.username, userId: user.id });
   } catch (error) {
-    res.status(500).json({ error: 'Erro interno' });
+    res.status(500).json({ error: 'Internal error' });
   }
 };

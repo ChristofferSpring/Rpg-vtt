@@ -5,13 +5,13 @@ export default function TopBar({ username, role }) {
     <div className="top-bar">
       <h3>Meu RPG VTT</h3>
       <div>
-        <span>Logado como: <strong>{username}</strong> </span>
-        {/* Renderização Condicional: Muda a cor se for Mestre */}
-        <span style={{ 
-            marginLeft: '10px', 
-            padding: '2px 8px', 
+        <span>Logged in as: <strong>{username}</strong> </span>
+        {/* Conditional render: different color for the Master */}
+        <span style={{
+            marginLeft: '10px',
+            padding: '2px 8px',
             borderRadius: '4px',
-            backgroundColor: role === 'MESTRE' ? '#e53e3e' : '#3182ce' 
+            backgroundColor: role === 'MASTER' ? '#e53e3e' : '#3182ce'
         }}>
           {role}
         </span>

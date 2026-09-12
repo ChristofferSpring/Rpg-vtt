@@ -5,20 +5,20 @@ import './App.css';
 import TopBar from './components/TopBar';
 import ChatSidebar from './components/ChatSidebar';
 import GameMap from './components/GameMap';
-import LoginPage from './components/LoginPage'; // <--- IMPORTANTE
+import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 
 const socket = io();
 function App() {
   const [currentGame, setCurrentGame] = useState(null);
 
-  // Login salvo no navegador já entra como estado inicial (evita re-render extra)
+  // Saved login already comes in as initial state (avoids an extra re-render)
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('rpg_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  // Entra na sala socket da mesa atual (servidor espera o evento 'join_room')
+  // Joins the socket room for the current game (server listens for 'join_room')
   useEffect(() => {
     if (currentGame) {
       socket.emit('join_room', currentGame.id);
@@ -35,25 +35,25 @@ function App() {
     localStorage.removeItem('rpg_user');
   };
 
-  // Se não tiver usuário, mostra tela de Login
+  // No user yet, show the Login screen
   if (!user) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
-  // 2. Se tem usuário, MAS "currentGame" é nulo, mostra DASHBOARD
+  // Logged in but no currentGame selected yet, show the DASHBOARD
   if (!currentGame) {
     return (
       <div className="app-container">
-         {/* TopBar fica fixa em todas as telas de usuário logado */}
-         <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Sair</button>
+         {/* TopBar stays fixed on every logged-in screen */}
+         <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Log out</button>
          <TopBar username={user.username}  />
-         
-         
-         {/* Passamos o user para exibir o nome, e passamos a função "setCurrentGame" 
-             para o Dashboard poder avisar quando escolhemos algo */}
-         <Dashboard 
-            user={user} 
-            onJoinGame={(game) => setCurrentGame(game)} 
+
+
+         {/* Pass user down to display the name, and setCurrentGame so the
+             Dashboard can notify us when a game is chosen */}
+         <Dashboard
+            user={user}
+            onJoinGame={(game) => setCurrentGame(game)}
          />
       </div>
     );
@@ -61,17 +61,17 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Passamos o handleLogout para poder sair */}
+      {/* Logout button */}
       <div style={{position: 'absolute', top: 10, right: 10, zIndex: 20}}>
-          <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Sair</button>
+          <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Log out</button>
       </div>
 
       <TopBar username={user.username} role={user.role} />
 
       <div className="main-content">
-        <GameMap 
-          user={user} 
-          onJoinGame={(game) => setCurrentGame(game)} 
+        <GameMap
+          user={user}
+          onJoinGame={(game) => setCurrentGame(game)}
         />
         <ChatSidebar />
       </div>

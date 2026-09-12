@@ -4,40 +4,40 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
-const routes = require('./routes'); // <--- Importa as rotas
+const routes = require('./routes');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Usa todas as rotas definidas no arquivo routes.js
-app.use('/api', routes); // Prefixo /api para ficar organizado (ex: /api/login)
+// Mounts all routes defined in routes.js
+app.use('/api', routes); // /api prefix keeps things organized (e.g. /api/login)
 
-// Configuração Frontend Estático
+// Static frontend config
 const clientPath = path.join(__dirname, '../client/dist');
 app.use(express.static(clientPath));
 
-// Configuração Socket.io
+// Socket.io config
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
 
 io.on('connection', (socket) => {
-  console.log(`Socket conectado: ${socket.id}`);
-  
-  // Exemplo: Entrar em uma sala específica da mesa
+  console.log(`Socket connected: ${socket.id}`);
+
+  // Example: join a specific game room
   socket.on('join_room', (gameId) => {
     socket.join(gameId);
-    console.log(`Socket ${socket.id} entrou na mesa ${gameId}`);
+    console.log(`Socket ${socket.id} joined game ${gameId}`);
   });
 });
 
-// Qualquer rota não-API manda pro React
+// Any non-API route falls through to React
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(clientPath, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`🚀 SERVIDOR RODANDO NA ${PORT}`);
+  console.log(`🚀 SERVER RUNNING ON ${PORT}`);
 });

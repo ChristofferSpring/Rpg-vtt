@@ -7,38 +7,38 @@ const sequelize = new Sequelize({
   logging: false
 });
 
-// 1. O Usuário (Global)
+// 1. The User (global)
 const User = sequelize.define('User', {
   username: { type: DataTypes.STRING, allowNull: false, unique: true },
   password: { type: DataTypes.STRING, allowNull: false }
 });
 
-// 2. A Partida/Mesa
+// 2. The Game/Table
 const Game = sequelize.define('Game', {
   name: { type: DataTypes.STRING, allowNull: false },
-  inviteCode: { type: DataTypes.STRING, unique: true } // Código para convidar amigos
+  inviteCode: { type: DataTypes.STRING, unique: true } // Code to invite friends
 });
 
-// 3. A Relação (Quem é o que em qual mesa)
+// 3. The relation (who is what in which game)
 const UserGame = sequelize.define('UserGame', {
-  role: { 
-    type: DataTypes.ENUM('MESTRE', 'JOGADOR'), 
-    defaultValue: 'JOGADOR' 
+  role: {
+    type: DataTypes.ENUM('MASTER', 'PLAYER'),
+    defaultValue: 'PLAYER'
   }
 });
 
-// Relacionamentos (Associações)
+// Associations
 User.belongsToMany(Game, { through: UserGame });
 Game.belongsToMany(User, { through: UserGame });
 
-// Para facilitar buscas depois: "Game.hasMany(UserGame)"
+// To make lookups easier later: "Game.hasMany(UserGame)"
 Game.hasMany(UserGame);
 UserGame.belongsTo(User);
 UserGame.belongsTo(Game);
 
-// alter:true força reconstrução de tabelas no SQLite (drop+recria) a cada boot,
-// o que quebra com FOREIGN KEY constraint assim que há tabelas relacionadas.
-// Schema já criado só precisa existir; mudanças de coluna devem virar migration.
+// alter:true forces SQLite to rebuild tables (drop+recreate) on every boot,
+// which breaks with a FOREIGN KEY constraint as soon as related tables exist.
+// The schema just needs to exist once; column changes should become a migration.
 sequelize.sync();
 
 module.exports = { sequelize, User, Game, UserGame };

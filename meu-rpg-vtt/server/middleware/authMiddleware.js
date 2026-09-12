@@ -5,7 +5,7 @@ module.exports = function authMiddleware(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Token não fornecido' });
+    return res.status(401).json({ error: 'Token not provided' });
   }
 
   try {
@@ -13,6 +13,6 @@ module.exports = function authMiddleware(req, res, next) {
     req.userId = decoded.id;
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Token inválido ou expirado' });
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 };

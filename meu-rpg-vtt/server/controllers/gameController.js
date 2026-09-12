@@ -1,26 +1,26 @@
 const { Game, User, UserGame } = require('../database/db');
-const { v4: uuidv4 } = require('uuid'); // Instale: npm install uuid
+const { v4: uuidv4 } = require('uuid');
 
 exports.createGame = async (req, res) => {
   const { name } = req.body;
   const userId = req.userId;
   try {
-    // 1. Cria a mesa
+    // 1. Create the game
     const newGame = await Game.create({
       name,
-      inviteCode: uuidv4().slice(0, 8) // Gera um código curto ex: 'a1b2c3d4'
+      inviteCode: uuidv4().slice(0, 8) // Generates a short code, e.g. 'a1b2c3d4'
     });
 
-    // 2. Adiciona o criador como MESTRE
+    // 2. Add the creator as MASTER
     await UserGame.create({
       UserId: userId,
       GameId: newGame.id,
-      role: 'MESTRE'
+      role: 'MASTER'
     });
 
     res.json(newGame);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar mesa' });
+    res.status(500).json({ error: 'Error creating game' });
   }
 };
 
@@ -30,12 +30,12 @@ exports.listMyGames = async (req, res) => {
     const user = await User.findByPk(userId, {
       include: {
         model: Game,
-        through: { attributes: ['role'] } // Traz qual é a role dele naquela mesa
+        through: { attributes: ['role'] } // Brings back the user's role in that game
       }
     });
     res.json(user ? user.Games : []);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar jogos' });
+    res.status(500).json({ error: 'Error fetching games' });
   }
 };
 
@@ -44,17 +44,17 @@ exports.joinGame = async (req, res) => {
   const userId = req.userId;
   try {
     const game = await Game.findOne({ where: { inviteCode } });
-    if (!game) return res.status(404).json({ error: 'Mesa não encontrada' });
+    if (!game) return res.status(404).json({ error: 'Game not found' });
 
-    // Adiciona como JOGADOR
+    // Add as PLAYER
     await UserGame.create({
       UserId: userId,
       GameId: game.id,
-      role: 'JOGADOR'
+      role: 'PLAYER'
     });
 
-    res.json({ message: 'Entrou na mesa!', game });
+    res.json({ message: 'Joined the game!', game });
   } catch (error) {
-    res.status(400).json({ error: 'Você já está nessa mesa ou erro interno' });
+    res.status(400).json({ error: 'Already in this game or internal error' });
   }
 };
