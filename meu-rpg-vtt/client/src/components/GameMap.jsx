@@ -25,6 +25,8 @@ export default function GameMap({ user, game, onJoinGame }) {
   // editingTokenId: full edit panel open for that token (set once the gear bubble is clicked)
   const [pickedTokenId, setPickedTokenId] = useState(null);
   const [editingTokenId, setEditingTokenId] = useState(null);
+  const [rulerMode, setRulerMode] = useState(false);
+  const [rulerPoints, setRulerPoints] = useState(null);
 
   const isMaster = game.role === 'MASTER';
   const backgroundUrl = board.backgroundImageUrl ? `${BASE_URL}${board.backgroundImageUrl}` : null;
@@ -128,6 +130,12 @@ export default function GameMap({ user, game, onJoinGame }) {
     onJoinGame(null);
   };
 
+  const toggleRulerMode = () => {
+    setRulerMode((prev) => !prev);
+    setRulerPoints(null);
+    deselectToken();
+  };
+
   const mapWidth = board.gridWidth * CELL_SIZE;
   const mapHeight = board.gridHeight * CELL_SIZE;
 
@@ -148,9 +156,19 @@ export default function GameMap({ user, game, onJoinGame }) {
       <Stage
         width={stageSize.width}
         height={stageSize.height}
-        draggable
+        draggable={!rulerMode}
         onClick={(e) => {
           if (e.target === e.target.getStage()) deselectToken();
+        }}
+        onMouseDown={(e) => {
+          if (!rulerMode) return;
+          const pos = e.target.getStage().getRelativePointerPosition();
+          setRulerPoints({ start: pos, end: pos });
+        }}
+        onMouseMove={(e) => {
+          if (!rulerMode || !rulerPoints) return;
+          const pos = e.target.getStage().getRelativePointerPosition();
+          setRulerPoints((prev) => ({ ...prev, end: pos }));
         }}
         onWheel={(e) => {
           e.evt.preventDefault();
@@ -173,10 +191,10 @@ export default function GameMap({ user, game, onJoinGame }) {
               key={token.id}
               token={token}
               cellSize={CELL_SIZE}
-              draggable={isMaster || token.ownerId === user.userId}
+              draggable={!rulerMode && (isMaster || token.ownerId === user.userId)}
               selected={token.id === pickedTokenId}
               onMove={handleMoveToken}
-              onSelect={isMaster ? (t) => setPickedTokenId(t.id) : undefined}
+              onSelect={isMaster && !rulerMode ? (t) => setPickedTokenId(t.id) : undefined}
             />
           ))}
           {pickedToken && !editingToken && (
@@ -186,6 +204,7 @@ export default function GameMap({ user, game, onJoinGame }) {
               onGear={() => setEditingTokenId(pickedToken.id)}
             />
           )}
+          {rulerPoints && <RulerLine points={rulerPoints} cellSize={CELL_SIZE} />}
         </Layer>
       </Stage>
 
@@ -195,8 +214,35 @@ export default function GameMap({ user, game, onJoinGame }) {
         game={game}
         selectedToken={editingToken}
         onCloseEdit={deselectToken}
+        rulerMode={rulerMode}
+        onToggleRuler={toggleRulerMode}
       />
     </div>
+  );
+}
+
+function RulerLine({ points, cellSize }) {
+  const { start, end } = points;
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const distance = (Math.sqrt(dx * dx + dy * dy) / cellSize).toFixed(1);
+  const midX = (start.x + end.x) / 2;
+  const midY = (start.y + end.y) / 2;
+
+  return (
+    <>
+      <Line points={[start.x, start.y, end.x, end.y]} stroke="#ffeb3b" strokeWidth={2} dash={[6, 4]} />
+      <Text
+        x={midX - 30}
+        y={midY - 20}
+        width={60}
+        align="center"
+        text={`${distance} cells`}
+        fontSize={14}
+        fill="#ffeb3b"
+        fontStyle="bold"
+      />
+    </>
   );
 }
 
@@ -239,9 +285,14 @@ function TokenBubbles({ token, cellSize, onGear }) {
   );
 }
 
-function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit }) {
+function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit, rulerMode, onToggleRuler }) {
   const [open, setOpen] = React.useState(false);
-  const isOpen = open || !!selectedToken;
+  const isOpen = (open || !!selectedToken) && !rulerMode;
+
+  const handleToggleRuler = () => {
+    setOpen(false);
+    onToggleRuler();
+  };
 
   return (
     <div style={{ position: 'absolute', bottom: '20px', left: '20px' }}>
@@ -255,7 +306,9 @@ function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit }) {
           ) : (
             <>
               <div>Tools</div>
-              <div>Ruler</div>
+              <button onClick={handleToggleRuler} style={{ width: '100%', marginBottom: '5px' }}>
+                Ruler
+              </button>
               <DicePanel />
               {isMaster && <CreateTokenPanel game={game} />}
               {isMaster && <BackgroundUploader game={game} />}
@@ -267,14 +320,18 @@ function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit }) {
         </div>
       )}
       <button
-        onClick={() => (selectedToken ? onCloseEdit() : setOpen(!open))}
+        onClick={() => {
+          if (rulerMode) return onToggleRuler();
+          if (selectedToken) return onCloseEdit();
+          setOpen(!open);
+        }}
         style={{
             width: '50px', height: '50px', borderRadius: '50%',
-            border: 'none', background: '#e53e3e', color: 'white',
-            fontSize: '24px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+            border: 'none', background: rulerMode ? '#3182ce' : '#e53e3e', color: 'white',
+            fontSize: rulerMode ? '14px' : '24px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
         }}
       >
-        {isOpen ? 'x' : '+'}
+        {rulerMode ? 'Stop' : (isOpen ? 'x' : '+')}
       </button>
     </div>
   );
