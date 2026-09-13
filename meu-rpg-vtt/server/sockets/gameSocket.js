@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { UserGame } = require('../database/db');
+const { UserGame, Token } = require('../database/db');
 
 function registerGameSocket(io) {
   // Verifies the JWT sent in the connection handshake before accepting the socket
@@ -37,6 +37,32 @@ function registerGameSocket(io) {
         console.log(`Socket ${socket.id} joined game ${gameId}`);
       } catch (error) {
         socket.emit('error', { message: 'Error joining game room' });
+      }
+    });
+
+    socket.on('move_token', async ({ tokenId, x, y }) => {
+      if (!socket.gameId) {
+        socket.emit('error', { message: 'Join a game room first' });
+        return;
+      }
+      try {
+        const token = await Token.findByPk(tokenId);
+        if (!token || token.GameId !== socket.gameId) {
+          socket.emit('error', { message: 'Token not found in this game' });
+          return;
+        }
+
+        const isMaster = socket.gameRole === 'MASTER';
+        const isOwner = token.ownerId === socket.userId;
+        if (!isMaster && !isOwner) {
+          socket.emit('error', { message: 'You cannot move this token' });
+          return;
+        }
+
+        await token.update({ x, y });
+        io.to(String(socket.gameId)).emit('token_moved', { tokenId: token.id, x, y });
+      } catch (error) {
+        socket.emit('error', { message: 'Error moving token' });
       }
     });
   });
