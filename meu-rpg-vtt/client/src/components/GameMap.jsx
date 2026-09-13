@@ -4,6 +4,7 @@ import useImage from 'use-image';
 import { api, BASE_URL } from '../services/api';
 import { getSocket } from '../services/socket';
 import Token from './Token';
+import CreateTokenPanel from './CreateTokenPanel';
 
 const CELL_SIZE = 50;
 
@@ -124,12 +125,12 @@ export default function GameMap({ user, game, onJoinGame }) {
         </Layer>
       </Stage>
 
-      <FloatingMenu onExit={handleLeave} />
+      <FloatingMenu onExit={handleLeave} isMaster={isMaster} game={game} />
     </div>
   );
 }
 
-function FloatingMenu({ onExit }) {
+function FloatingMenu({ onExit, isMaster, game }) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -137,11 +138,12 @@ function FloatingMenu({ onExit }) {
       {open && (
         <div style={{
             marginBottom: '10px', background: 'white', color: 'black',
-            padding: '10px', borderRadius: '5px'
+            padding: '10px', borderRadius: '5px', width: '200px'
         }}>
           <div>🛠️ Tools</div>
           <div>🎲 Dice</div>
           <div>📏 Ruler</div>
+          {isMaster && <CreateTokenPanel game={game} />}
           <div>
             <button onClick={onExit}> back </button>
           </div>
