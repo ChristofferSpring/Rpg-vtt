@@ -5,7 +5,8 @@ const authController = require('./controllers/authController');
 const gameController = require('./controllers/gameController');
 const authMiddleware = require('./middleware/authMiddleware');
 const boardController = require('./controllers/boardController');
-const { requireGameMember } = require('./middleware/gameMembership');
+const tokenController = require('./controllers/tokenController');
+const { requireGameMember, requireGameMaster } = require('./middleware/gameMembership');
 
 // Auth routes
 router.post('/register', authController.register);
@@ -17,5 +18,6 @@ router.post('/games/join', authMiddleware, gameController.joinGame);     // Join
 router.get('/games/my-games', authMiddleware, gameController.listMyGames); // List my games
 router.get('/games/:gameId/board', authMiddleware, requireGameMember, boardController.getBoard);
 router.get('/games/:gameId/members', authMiddleware, requireGameMember, boardController.getMembers);
+router.post('/games/:gameId/tokens', authMiddleware, requireGameMember, requireGameMaster, tokenController.createToken);
 
 module.exports = router;
