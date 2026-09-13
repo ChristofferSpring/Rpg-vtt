@@ -12,11 +12,12 @@ exports.getBoard = async (req, res) => {
       return req.gameRole === 'MASTER' || token.ownerId === req.userId;
     });
 
-    const messages = await ChatMessage.findAll({
+    const recentMessages = await ChatMessage.findAll({
       where: { GameId: gameId },
-      order: [['createdAt', 'ASC']],
+      order: [['createdAt', 'DESC']],
       limit: 200
     });
+    const messages = recentMessages.reverse();
 
     res.json({
       tokens: visibleTokens,
