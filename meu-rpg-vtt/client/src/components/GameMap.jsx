@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Stage, Layer, Rect, Line, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Rect, Line, Circle, Text, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import { api, BASE_URL } from '../services/api';
 import { getSocket } from '../services/socket';
@@ -20,12 +20,21 @@ export default function GameMap({ user, game, onJoinGame }) {
     gridHeight: 30
   });
 
-  const [selectedTokenId, setSelectedTokenId] = useState(null);
+  // pickedTokenId: satellite bubbles showing next to a clicked token
+  // editingTokenId: full edit panel open for that token (set once the gear bubble is clicked)
+  const [pickedTokenId, setPickedTokenId] = useState(null);
+  const [editingTokenId, setEditingTokenId] = useState(null);
 
   const isMaster = game.role === 'MASTER';
   const backgroundUrl = board.backgroundImageUrl ? `${BASE_URL}${board.backgroundImageUrl}` : null;
   const [backgroundImage] = useImage(backgroundUrl);
-  const selectedToken = board.tokens.find((t) => t.id === selectedTokenId) || null;
+  const pickedToken = board.tokens.find((t) => t.id === pickedTokenId) || null;
+  const editingToken = board.tokens.find((t) => t.id === editingTokenId) || null;
+
+  const deselectToken = () => {
+    setPickedTokenId(null);
+    setEditingTokenId(null);
+  };
 
   // board fetch filters owner-only tokens server-side, but live broadcasts
   // don't, so we filter again here for both cases
@@ -76,7 +85,8 @@ export default function GameMap({ user, game, onJoinGame }) {
     };
 
     const handleTokenDeleted = ({ tokenId }) => {
-      setSelectedTokenId((current) => (current === tokenId ? null : current));
+      setPickedTokenId((current) => (current === tokenId ? null : current));
+      setEditingTokenId((current) => (current === tokenId ? null : current));
       setBoard((prev) => ({ ...prev, tokens: prev.tokens.filter((t) => t.id !== tokenId) }));
     };
 
@@ -136,6 +146,9 @@ export default function GameMap({ user, game, onJoinGame }) {
         width={stageSize.width}
         height={stageSize.height}
         draggable
+        onClick={(e) => {
+          if (e.target === e.target.getStage()) deselectToken();
+        }}
         onWheel={(e) => {
           e.evt.preventDefault();
           const stage = e.target.getStage();
@@ -147,9 +160,9 @@ export default function GameMap({ user, game, onJoinGame }) {
         }}
       >
         <Layer>
-          <Rect x={0} y={0} width={mapWidth} height={mapHeight} fill="#000" />
+          <Rect x={0} y={0} width={mapWidth} height={mapHeight} fill="#000" onClick={deselectToken} />
           {backgroundImage && (
-            <KonvaImage image={backgroundImage} width={mapWidth} height={mapHeight} />
+            <KonvaImage image={backgroundImage} width={mapWidth} height={mapHeight} onClick={deselectToken} />
           )}
           {gridLines}
           {board.tokens.filter(canSee).map((token) => (
@@ -158,10 +171,18 @@ export default function GameMap({ user, game, onJoinGame }) {
               token={token}
               cellSize={CELL_SIZE}
               draggable={isMaster || token.ownerId === user.userId}
+              selected={token.id === pickedTokenId}
               onMove={handleMoveToken}
-              onSelect={isMaster ? (t) => setSelectedTokenId(t.id) : undefined}
+              onSelect={isMaster ? (t) => setPickedTokenId(t.id) : undefined}
             />
           ))}
+          {pickedToken && !editingToken && (
+            <TokenBubbles
+              token={pickedToken}
+              cellSize={CELL_SIZE}
+              onGear={() => setEditingTokenId(pickedToken.id)}
+            />
+          )}
         </Layer>
       </Stage>
 
@@ -169,10 +190,49 @@ export default function GameMap({ user, game, onJoinGame }) {
         onExit={handleLeave}
         isMaster={isMaster}
         game={game}
-        selectedToken={selectedToken}
-        onCloseEdit={() => setSelectedTokenId(null)}
+        selectedToken={editingToken}
+        onCloseEdit={deselectToken}
       />
     </div>
+  );
+}
+
+function TokenBubbles({ token, cellSize, onGear }) {
+  const radius = cellSize * 0.4;
+  const bubbleY = token.y - radius - 20;
+
+  return (
+    <>
+      <Circle
+        x={token.x - 18}
+        y={bubbleY}
+        radius={13}
+        fill="#f7f7f7"
+        stroke="#000"
+        strokeWidth={1}
+        shadowBlur={4}
+        onClick={onGear}
+        onTap={onGear}
+      />
+      <Text
+        x={token.x - 18 - 13}
+        y={bubbleY - 8}
+        width={26}
+        align="center"
+        text="⚙️"
+        fontSize={16}
+        listening={false}
+      />
+      <Circle
+        x={token.x + 18}
+        y={bubbleY}
+        radius={13}
+        fill={token.color}
+        stroke="#000"
+        strokeWidth={1}
+        shadowBlur={4}
+      />
+    </>
   );
 }
 

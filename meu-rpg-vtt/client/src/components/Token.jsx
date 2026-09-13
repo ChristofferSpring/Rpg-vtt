@@ -1,7 +1,7 @@
 import React from 'react';
 import { Circle, Text, Group } from 'react-konva';
 
-export default function Token({ token, cellSize, draggable, onMove, onSelect }) {
+export default function Token({ token, cellSize, draggable, selected, onMove, onSelect }) {
   const radius = cellSize * 0.4;
 
   return (
@@ -13,6 +13,9 @@ export default function Token({ token, cellSize, draggable, onMove, onSelect }) 
       onClick={() => onSelect?.(token)}
       onTap={() => onSelect?.(token)}
     >
+      {selected && (
+        <Circle radius={radius + 4} stroke="#fff" strokeWidth={2} dash={[4, 3]} />
+      )}
       <Circle radius={radius} fill={token.color} stroke="#000" strokeWidth={1} />
       <Text
         text={token.label}
