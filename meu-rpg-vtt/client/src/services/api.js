@@ -12,8 +12,9 @@ export function getToken() {
 
 async function request(path, options = {}) {
   const token = getToken();
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -45,4 +46,17 @@ export const api = {
 
   joinGame: (inviteCode) =>
     request('/api/games/join', { method: 'POST', body: JSON.stringify({ inviteCode }) }),
+
+  getBoard: (gameId) => request(`/api/games/${gameId}/board`),
+
+  getMembers: (gameId) => request(`/api/games/${gameId}/members`),
+
+  createToken: (gameId, tokenData) =>
+    request(`/api/games/${gameId}/tokens`, { method: 'POST', body: JSON.stringify(tokenData) }),
+
+  uploadBackground: (gameId, file) => {
+    const formData = new FormData();
+    formData.append('background', file);
+    return request(`/api/games/${gameId}/background`, { method: 'POST', body: formData });
+  },
 };
