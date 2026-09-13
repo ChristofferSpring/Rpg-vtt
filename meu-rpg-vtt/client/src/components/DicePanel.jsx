@@ -12,7 +12,7 @@ export default function DicePanel() {
 
   return (
     <div style={{ borderTop: '1px solid #ccc', marginTop: '10px', paddingTop: '10px' }}>
-      <div>🎲 Roll dice</div>
+      <div>Roll dice</div>
       <input
         type="number"
         min="1"

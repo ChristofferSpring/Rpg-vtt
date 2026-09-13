@@ -34,7 +34,7 @@ export default function CreateTokenPanel({ game }) {
 
   return (
     <div style={{ borderTop: '1px solid #ccc', marginTop: '10px', paddingTop: '10px' }}>
-      <div>➕ New token</div>
+      <div>New token</div>
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}

@@ -14,7 +14,7 @@ export default function BackgroundUploader({ game }) {
 
   return (
     <div style={{ borderTop: '1px solid #ccc', marginTop: '10px', paddingTop: '10px' }}>
-      <div>🖼️ Map background</div>
+      <div>Map background</div>
       <input type="file" accept="image/*" onChange={handleFileChange} />
     </div>
   );

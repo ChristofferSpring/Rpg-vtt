@@ -41,7 +41,7 @@ export default function EditTokenPanel({ game, token, onClose }) {
 
   return (
     <div style={{ borderTop: '1px solid #ccc', marginTop: '10px', paddingTop: '10px' }}>
-      <div>✏️ Edit token</div>
+      <div>Edit token</div>
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}

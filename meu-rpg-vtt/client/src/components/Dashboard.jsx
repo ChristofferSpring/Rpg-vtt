@@ -69,7 +69,7 @@ export default function Dashboard({ user, onJoinGame }) {
 
         {/* GAME LIST */}
         <section style={{ flex: 1 }}>
-          <h3>📜 Your Games</h3>
+          <h3>Your Games</h3>
           <div style={{ background: '#2d3748', padding: '20px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
             {myGames.length === 0 && <p style={{ color: '#aaa' }}>Nothing here yet.</p>}
@@ -103,7 +103,7 @@ export default function Dashboard({ user, onJoinGame }) {
 
           {/* CREATE NEW GAME */}
           <div style={{ marginBottom: '30px', background: '#2d3748', padding: '15px', borderRadius: '8px' }}>
-            <h4>🔨 Create New Game</h4>
+            <h4>Create New Game</h4>
             <input
                 value={newGameName}
                 onChange={(e) => setNewGameName(e.target.value)}
@@ -121,7 +121,7 @@ export default function Dashboard({ user, onJoinGame }) {
 
           {/* JOIN WITH CODE */}
           <div style={{ background: '#2d3748', padding: '15px', borderRadius: '8px' }}>
-            <h4>🔗 Join via Code</h4>
+            <h4>Join via Code</h4>
             <input
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}

@@ -118,8 +118,10 @@ export default function GameMap({ user, game, onJoinGame }) {
     };
   }, [canSee, game.id]);
 
+  const snapToGrid = (value) => Math.round((value - CELL_SIZE / 2) / CELL_SIZE) * CELL_SIZE + CELL_SIZE / 2;
+
   const handleMoveToken = (tokenId, x, y) => {
-    getSocket()?.emit('move_token', { tokenId, x, y });
+    getSocket()?.emit('move_token', { tokenId, x: snapToGrid(x), y: snapToGrid(y) });
   };
 
   const handleLeave = () => {
@@ -252,8 +254,8 @@ function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit }) {
             <EditTokenPanel game={game} token={selectedToken} onClose={onCloseEdit} />
           ) : (
             <>
-              <div>🛠️ Tools</div>
-              <div>📏 Ruler</div>
+              <div>Tools</div>
+              <div>Ruler</div>
               <DicePanel />
               {isMaster && <CreateTokenPanel game={game} />}
               {isMaster && <BackgroundUploader game={game} />}
