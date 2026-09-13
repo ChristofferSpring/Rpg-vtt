@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import io from 'socket.io-client';
 import './App.css';
 
 import TopBar from './components/TopBar';
@@ -7,8 +6,8 @@ import ChatSidebar from './components/ChatSidebar';
 import GameMap from './components/GameMap';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
+import { connectSocket, disconnectSocket, getSocket } from './services/socket';
 
-const socket = io();
 function App() {
   const [currentGame, setCurrentGame] = useState(null);
 
@@ -18,10 +17,17 @@ function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
+  // Connects the authenticated socket once logged in
+  useEffect(() => {
+    if (user) {
+      connectSocket();
+    }
+  }, [user]);
+
   // Joins the socket room for the current game (server listens for 'join_room')
   useEffect(() => {
     if (currentGame) {
-      socket.emit('join_room', currentGame.id);
+      getSocket()?.emit('join_room', currentGame.id);
     }
   }, [currentGame]);
 
@@ -33,6 +39,7 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('rpg_user');
+    disconnectSocket();
   };
 
   // No user yet, show the Login screen
@@ -66,14 +73,15 @@ function App() {
           <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Log out</button>
       </div>
 
-      <TopBar username={user.username} role={user.role} />
+      <TopBar username={user.username} role={currentGame.role} />
 
       <div className="main-content">
         <GameMap
           user={user}
+          game={currentGame}
           onJoinGame={(game) => setCurrentGame(game)}
         />
-        <ChatSidebar />
+        <ChatSidebar user={user} game={currentGame} />
       </div>
     </div>
   );
