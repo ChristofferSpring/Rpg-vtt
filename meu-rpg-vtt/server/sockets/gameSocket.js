@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { UserGame, Token } = require('../database/db');
+const { UserGame, Token, ChatMessage } = require('../database/db');
 
 function registerGameSocket(io) {
   // Verifies the JWT sent in the connection handshake before accepting the socket
@@ -63,6 +63,25 @@ function registerGameSocket(io) {
         io.to(String(socket.gameId)).emit('token_moved', { tokenId: token.id, x, y });
       } catch (error) {
         socket.emit('error', { message: 'Error moving token' });
+      }
+    });
+
+    socket.on('send_message', async ({ text }) => {
+      if (!socket.gameId) {
+        socket.emit('error', { message: 'Join a game room first' });
+        return;
+      }
+      if (!text || !text.trim()) return;
+      try {
+        const message = await ChatMessage.create({
+          GameId: socket.gameId,
+          UserId: socket.userId,
+          username: socket.username,
+          text: text.trim()
+        });
+        io.to(String(socket.gameId)).emit('new_message', message);
+      } catch (error) {
+        socket.emit('error', { message: 'Error sending message' });
       }
     });
   });
