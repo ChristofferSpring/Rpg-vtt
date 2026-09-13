@@ -1,4 +1,10 @@
-const { Token } = require('../database/db');
+const { Token, UserGame } = require('../database/db');
+
+async function isValidOwner(gameId, ownerId) {
+  if (!ownerId) return true;
+  const membership = await UserGame.findOne({ where: { UserId: ownerId, GameId: gameId } });
+  return !!membership;
+}
 
 exports.createToken = async (req, res) => {
   const gameId = Number(req.params.gameId);
@@ -6,6 +12,10 @@ exports.createToken = async (req, res) => {
 
   if (!label || !label.trim()) {
     return res.status(400).json({ error: 'Token label is required' });
+  }
+
+  if (!(await isValidOwner(gameId, ownerId))) {
+    return res.status(400).json({ error: 'Owner must be a member of this game' });
   }
 
   try {
@@ -35,6 +45,10 @@ exports.updateToken = async (req, res) => {
 
   if (!label || !label.trim()) {
     return res.status(400).json({ error: 'Token label is required' });
+  }
+
+  if (!(await isValidOwner(gameId, ownerId))) {
+    return res.status(400).json({ error: 'Owner must be a member of this game' });
   }
 
   try {
