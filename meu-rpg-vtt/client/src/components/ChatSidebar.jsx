@@ -43,7 +43,7 @@ export default function ChatSidebar({ game }) {
 
       <div style={{ flex: 1, padding: '10px', overflowY: 'auto' }}>
         {messages.length === 0 && (
-          <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Welcome to the room...</p>
+          <p style={{ color: '#aaa', fontSize: '0.9rem' }}>No messages yet.</p>
         )}
         {messages.map((message) => (
           <div key={message.id} style={{ marginBottom: '6px', fontSize: '0.9rem' }}>

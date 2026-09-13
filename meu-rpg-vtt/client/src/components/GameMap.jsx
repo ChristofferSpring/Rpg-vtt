@@ -23,10 +23,8 @@ export default function GameMap({ user, game, onJoinGame }) {
   const backgroundUrl = board.backgroundImageUrl ? `${BASE_URL}${board.backgroundImageUrl}` : null;
   const [backgroundImage] = useImage(backgroundUrl);
 
-  // Owner-only tokens must never render for anyone but the GM or the
-  // token's own owner. The initial GET /board fetch already filters these
-  // server-side, but live 'token_created' broadcasts do not, so this same
-  // predicate is applied both to incoming broadcasts and at render time.
+  // board fetch filters owner-only tokens server-side, but live broadcasts
+  // don't, so we filter again here for both cases
   const canSee = useCallback(
     (t) => t.visibility !== 'owner' || isMaster || t.ownerId === user.userId,
     [isMaster, user.userId]
@@ -68,9 +66,8 @@ export default function GameMap({ user, game, onJoinGame }) {
       setBoard((prev) => ({ ...prev, backgroundImageUrl }));
     };
 
-    // A rejected move_token (or other server-side denial) still shows the
-    // token wherever Konva optimistically dragged it to on screen. Re-fetch
-    // the authoritative board on any 'error' to correct the visual desync.
+    // rejected moves leave the token wherever it got dragged on screen -
+    // just refetch to snap it back
     const handleError = () => {
       api.getBoard(game.id).then(setBoard).catch((err) => console.error('Error reloading board:', err));
     };
@@ -86,9 +83,6 @@ export default function GameMap({ user, game, onJoinGame }) {
       socket.off('background_updated', handleBackgroundUpdated);
       socket.off('error', handleError);
     };
-    // canSee/game.id are included so a game switch without a full remount
-    // (see App.jsx's join/leave-room effect) can't leave these handlers
-    // running the previous game's visibility check or refetching the wrong board.
   }, [canSee, game.id]);
 
   const handleMoveToken = (tokenId, x, y) => {

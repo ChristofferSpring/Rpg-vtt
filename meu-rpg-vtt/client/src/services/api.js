@@ -23,7 +23,7 @@ async function request(path, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (response.status === 401 && token) {
-    // Session token expired or was rejected: drop it and force a fresh login
+    // token's dead, kick back to login
     localStorage.removeItem('rpg_user');
     window.location.reload();
   }

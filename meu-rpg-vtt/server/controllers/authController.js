@@ -11,7 +11,7 @@ exports.register = async (req, res) => {
     const user = await User.create({ username, password: hashedPassword });
     res.json({ id: user.id, username: user.username });
   } catch (error) {
-    res.status(400).json({ error: 'Error registering. Does the user already exist?' });
+    res.status(400).json({ error: 'Registration failed - username might already be taken' });
   }
 };
 

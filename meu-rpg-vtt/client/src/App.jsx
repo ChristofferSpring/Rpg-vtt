@@ -11,7 +11,7 @@ import { connectSocket, disconnectSocket, getSocket, joinRoom, leaveRoom } from 
 function App() {
   const [currentGame, setCurrentGame] = useState(null);
 
-  // Saved login already comes in as initial state (avoids an extra re-render)
+  // hydrate from localStorage synchronously so we skip a flash of the login screen
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('rpg_user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -24,9 +24,7 @@ function App() {
     }
   }, [user]);
 
-  // Joins the socket room for the current game (server listens for 'join_room'),
-  // and leaves it again on cleanup so switching games (or returning to the
-  // Dashboard) can never leave the socket in two rooms at once.
+  // join the game's room, leave it again on cleanup (game switch or unmount)
   useEffect(() => {
     if (!currentGame) return;
 
@@ -59,22 +57,16 @@ function App() {
     disconnectSocket();
   };
 
-  // No user yet, show the Login screen
   if (!user) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
-  // Logged in but no currentGame selected yet, show the DASHBOARD
   if (!currentGame) {
     return (
       <div className="app-container">
-         {/* TopBar stays fixed on every logged-in screen */}
          <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Log out</button>
          <TopBar username={user.username}  />
 
-
-         {/* Pass user down to display the name, and setCurrentGame so the
-             Dashboard can notify us when a game is chosen */}
          <Dashboard
             user={user}
             onJoinGame={(game) => setCurrentGame(game)}
@@ -85,7 +77,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Logout button */}
       <div style={{position: 'absolute', top: 10, right: 10, zIndex: 20}}>
           <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Log out</button>
       </div>

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const { UserGame, Token, ChatMessage } = require('../database/db');
 
 function registerGameSocket(io) {
-  // Verifies the JWT sent in the connection handshake before accepting the socket
+  // check the JWT before accepting the connection at all
   io.use((socket, next) => {
     const { token } = socket.handshake.auth || {};
     if (!token) {
@@ -21,7 +21,6 @@ function registerGameSocket(io) {
   io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
-    // A socket only ever has one active game room at a time in this app
     socket.on('join_room', async (gameId) => {
       try {
         const membership = await UserGame.findOne({
@@ -41,9 +40,8 @@ function registerGameSocket(io) {
       }
     });
 
-    // Counterpart to join_room: leaves the current game's room (if any) and
-    // clears the room-scoped socket state, so a client switching games or
-    // returning to the Dashboard doesn't keep receiving that game's broadcasts.
+    // opposite of join_room - clears the room so a game switch doesn't leak
+    // broadcasts from the old one
     socket.on('leave_room', () => {
       if (socket.gameId) {
         socket.leave(String(socket.gameId));

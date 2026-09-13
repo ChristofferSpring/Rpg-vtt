@@ -55,6 +55,6 @@ exports.joinGame = async (req, res) => {
 
     res.json({ message: 'Joined the game!', game });
   } catch (error) {
-    res.status(400).json({ error: 'Already in this game or internal error' });
+    res.status(400).json({ error: "Couldn't join - you might already be in this game" });
   }
 };

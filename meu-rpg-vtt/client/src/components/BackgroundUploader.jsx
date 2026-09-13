@@ -8,7 +8,7 @@ export default function BackgroundUploader({ game }) {
     try {
       await api.uploadBackground(game.id, file);
     } catch (err) {
-      alert('Error uploading background: ' + err.message);
+      alert("Couldn't upload that: " + err.message);
     }
   };
 

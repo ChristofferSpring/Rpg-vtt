@@ -14,7 +14,7 @@ export default function CreateTokenPanel({ game }) {
 
   const handleCreate = async () => {
     if (!label.trim()) {
-      alert('Enter a token name!');
+      alert('Give it a name first.');
       return;
     }
     try {
@@ -28,7 +28,7 @@ export default function CreateTokenPanel({ game }) {
       });
       setLabel('');
     } catch (err) {
-      alert('Error creating token: ' + err.message);
+      alert("Couldn't create the token: " + err.message);
     }
   };
 

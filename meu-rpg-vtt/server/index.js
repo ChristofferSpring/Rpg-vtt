@@ -10,9 +10,8 @@ const { ready } = require('./database/db');
 
 const app = express();
 
-// Only matters for cross-origin requests (e.g. Vite dev server on :5173
-// talking to this API on :3001). The production build is served from
-// this same origin, so it never hits this check.
+// only kicks in for cross-origin dev requests (Vite on :5173 hitting :3001);
+// prod is same-origin so this never applies there
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim());
@@ -20,8 +19,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
-// Mounts all routes defined in routes.js
-app.use('/api', routes); // /api prefix keeps things organized (e.g. /api/login)
+app.use('/api', routes);
 
 // Static frontend config
 const clientPath = path.join(__dirname, '../client/dist');
@@ -44,9 +42,8 @@ app.get(/.*/, (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-// Don't accept requests until the schema (tables + additive column
-// migrations) is confirmed ready — otherwise a cold start against an
-// unmigrated database could serve requests before tables/columns exist.
+// wait for the schema to be ready before serving anything - a cold start
+// against an unmigrated db would otherwise 500 on the first request
 ready
   .then(() => {
     server.listen(PORT, () => {

@@ -64,10 +64,8 @@ ChatMessage.belongsTo(Game);
 User.hasMany(ChatMessage);
 ChatMessage.belongsTo(User);
 
-// alter:true forces SQLite to rebuild tables (drop+recreate) on every boot,
-// which breaks with a FOREIGN KEY constraint as soon as related tables exist.
-// The schema just needs to exist once; column changes become an explicit,
-// additive migration below instead.
+// alter:true rebuilds tables on every boot and blows up once foreign keys
+// exist, so new columns get added by hand below instead
 async function ensureGameColumns() {
   const [columns] = await sequelize.query('PRAGMA table_info(`Games`)');
   const existing = columns.map((column) => column.name);

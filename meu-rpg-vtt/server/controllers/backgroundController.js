@@ -18,10 +18,8 @@ const MIME_EXTENSIONS = {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
-  // Extension must come from the validated mimetype, never from the
-  // client-supplied original filename (which could smuggle in a `.svg`/
-  // `.html` extension past the mimetype allowlist and be served as such by
-  // express.static, enabling stored XSS).
+  // extension comes from the checked mimetype, not the client's filename -
+  // otherwise someone ships a .svg past the allowlist and it gets served as one
   filename: (req, file, cb) => cb(null, `${uuidv4()}${MIME_EXTENSIONS[file.mimetype] || ''}`)
 });
 

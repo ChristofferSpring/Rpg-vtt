@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 
-// Receives "user" (to know who we are) and "onJoinGame" (a function to tell App which game was picked)
 export default function Dashboard({ user, onJoinGame }) {
   const [newGameName, setNewGameName] = useState('');
   const [joinCode, setJoinCode] = useState('');
@@ -21,35 +20,32 @@ export default function Dashboard({ user, onJoinGame }) {
   }, [user]);
 
   const handleEnterGame = (originalGame) => {
-    // Build a new object copying everything from the original
     const readyGame = {
-      ...originalGame, // Copies id, name, inviteCode...
+      ...originalGame,
       role: originalGame.UserGame ? originalGame.UserGame.role : 'GUEST'
     };
-
-    // Send it up to App.jsx
     onJoinGame(readyGame);
   };
 
   const handleCreateGame = async () => {
     if (newGameName.trim() === '') {
-      alert('Enter a name for the game!');
+      alert('Give the game a name first.');
       return;
     }
 
     try {
       const data = await api.createGame(newGameName);
-      alert(`Game "${data.name}" created successfully!`);
+      alert(`"${data.name}" is ready.`);
       setNewGameName('');
       fetchGames();
     } catch (err) {
-      alert('Error creating game: ' + err.message);
+      alert("Couldn't create the game: " + err.message);
     }
   };
 
   const handleJoinGame = async () => {
     if (joinCode.trim() === '') {
-      alert('Enter an invite code!');
+      alert('Paste in an invite code first.');
       return;
     }
 
@@ -58,7 +54,7 @@ export default function Dashboard({ user, onJoinGame }) {
       setJoinCode('');
       fetchGames();
     } catch (err) {
-      alert('Error joining game: ' + err.message);
+      alert("Couldn't join: " + err.message);
     }
   };
  return (
@@ -66,7 +62,7 @@ export default function Dashboard({ user, onJoinGame }) {
 
       <header style={{ marginBottom: '40px', borderBottom: '1px solid #444' }}>
         <h2>Welcome, {user.username}!</h2>
-        <p>Choose your adventure.</p>
+        <p>Pick a table below, or start a new one.</p>
       </header>
 
       <div style={{ display: 'flex', gap: '50px' }}>
@@ -76,7 +72,7 @@ export default function Dashboard({ user, onJoinGame }) {
           <h3>📜 Your Games</h3>
           <div style={{ background: '#2d3748', padding: '20px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-            {myGames.length === 0 && <p style={{ color: '#aaa' }}>No games found.</p>}
+            {myGames.length === 0 && <p style={{ color: '#aaa' }}>Nothing here yet.</p>}
 
             {myGames.map((game) => (
               <div

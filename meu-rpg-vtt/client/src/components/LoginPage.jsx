@@ -14,7 +14,7 @@ export default function LoginPage({ onLogin }) {
     try {
       if (isRegister) {
         await api.register(username, password);
-        alert('Account created! Now log in.');
+        alert('Account created, log in below.');
         setIsRegister(false);
       } else {
         const data = await api.login(username, password);
@@ -60,7 +60,7 @@ export default function LoginPage({ onLogin }) {
           onClick={() => setIsRegister(!isRegister)}
           style={{ textAlign: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#63b3ed' }}
         >
-          {isRegister ? 'Already have an account' : "Don't have an account? Create one now"}
+          {isRegister ? 'Already have an account? Log in' : 'New here? Make an account'}
         </p>
       </form>
     </div>

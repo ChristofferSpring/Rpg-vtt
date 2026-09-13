@@ -3,10 +3,9 @@ import React from 'react';
 export default function TopBar({ username, role }) {
   return (
     <div className="top-bar">
-      <h3>Meu RPG VTT</h3>
+      <h3>RPG4v</h3>
       <div>
         <span>Logged in as: <strong>{username}</strong> </span>
-        {/* Conditional render: different color for the Master */}
         <span style={{
             marginLeft: '10px',
             padding: '2px 8px',

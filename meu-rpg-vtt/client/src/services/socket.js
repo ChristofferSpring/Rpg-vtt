@@ -8,17 +8,12 @@ export function connectSocket() {
   if (socket) return socket;
   socket = io(BASE_URL, { auth: { token: getToken() } });
 
-  // Socket.io auto-reconnects after a dropped connection, but a fresh
-  // connection has no server-side gameId/gameRole until 'join_room' is
-  // re-emitted. Re-join whatever room was last active so reconnects don't
-  // silently break move_token/send_message.
+  // re-join on reconnect, otherwise the socket sits roomless after a drop
   socket.on('connect', () => {
     if (currentRoom) socket.emit('join_room', currentRoom);
   });
 
-  // Mirrors the expired-session handling in services/api.js's request():
-  // an invalid/expired JWT fails the handshake, so drop it and force a
-  // fresh login rather than leaving the app in a half-connected state.
+  // bad/expired token -> same handling as an expired REST session
   socket.on('connect_error', () => {
     localStorage.removeItem('rpg_user');
     window.location.reload();
