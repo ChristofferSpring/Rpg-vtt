@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const routes = require('./routes');
+const registerGameSocket = require('./sockets/gameSocket');
 
 const app = express();
 
@@ -25,19 +26,15 @@ app.use('/api', routes); // /api prefix keeps things organized (e.g. /api/login)
 const clientPath = path.join(__dirname, '../client/dist');
 app.use(express.static(clientPath));
 
+// Uploaded game assets (backgrounds, later token images)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Socket.io config
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: allowedOrigins, methods: ["GET", "POST"] } });
+app.set('io', io);
 
-io.on('connection', (socket) => {
-  console.log(`Socket connected: ${socket.id}`);
-
-  // Example: join a specific game room
-  socket.on('join_room', (gameId) => {
-    socket.join(gameId);
-    console.log(`Socket ${socket.id} joined game ${gameId}`);
-  });
-});
+registerGameSocket(io);
 
 // Any non-API route falls through to React
 app.get(/.*/, (req, res) => {
