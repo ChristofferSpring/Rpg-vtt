@@ -8,10 +8,11 @@ import CreateTokenPanel from './CreateTokenPanel';
 import BackgroundUploader from './BackgroundUploader';
 import EditTokenPanel from './EditTokenPanel';
 import DicePanel from './DicePanel';
+import OnlinePanel from './OnlinePanel';
 
 const CELL_SIZE = 50;
 
-export default function GameMap({ user, game, onJoinGame }) {
+export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
   const containerRef = useRef(null);
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [board, setBoard] = useState({
@@ -153,6 +154,7 @@ export default function GameMap({ user, game, onJoinGame }) {
 
   return (
     <div className="map-area" ref={containerRef}>
+      <OnlinePanel users={onlineUsers} currentUserId={user.userId} />
       <Stage
         width={stageSize.width}
         height={stageSize.height}

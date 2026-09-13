@@ -10,6 +10,7 @@ import { connectSocket, disconnectSocket, getSocket, joinRoom, leaveRoom } from 
 
 function App() {
   const [currentGame, setCurrentGame] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   // hydrate from localStorage synchronously so we skip a flash of the login screen
   const [user, setUser] = useState(() => {
@@ -28,7 +29,7 @@ function App() {
   useEffect(() => {
     if (!currentGame) return;
 
-    joinRoom(currentGame.id);
+    joinRoom(currentGame.id, setOnlineUsers);
 
     const socket = getSocket();
     const handleError = (payload) => {
@@ -38,10 +39,13 @@ function App() {
       }
     };
     socket?.on('error', handleError);
+    socket?.on('presence_update', setOnlineUsers);
 
     return () => {
       socket?.off('error', handleError);
+      socket?.off('presence_update', setOnlineUsers);
       leaveRoom();
+      setOnlineUsers([]);
     };
   }, [currentGame]);
 
@@ -88,6 +92,7 @@ function App() {
           user={user}
           game={currentGame}
           onJoinGame={(game) => setCurrentGame(game)}
+          onlineUsers={onlineUsers}
         />
         <ChatSidebar user={user} game={currentGame} />
       </div>

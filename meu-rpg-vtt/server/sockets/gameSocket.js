@@ -4,6 +4,21 @@ const { UserGame, Token, ChatMessage } = require('../database/db');
 const ALLOWED_DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
 const MAX_DICE_COUNT = 20;
 
+function getOnlineUsers(io, gameId) {
+  const room = io.sockets.adapter.rooms.get(String(gameId));
+  if (!room) return [];
+  const byUserId = new Map();
+  for (const socketId of room) {
+    const s = io.sockets.sockets.get(socketId);
+    if (s && s.userId) byUserId.set(s.userId, s.username);
+  }
+  return Array.from(byUserId, ([userId, username]) => ({ userId, username }));
+}
+
+function broadcastPresence(io, gameId) {
+  io.to(String(gameId)).emit('presence_update', getOnlineUsers(io, gameId));
+}
+
 function registerGameSocket(io) {
   // check the JWT before accepting the connection at all
   io.use((socket, next) => {
@@ -24,7 +39,7 @@ function registerGameSocket(io) {
   io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
-    socket.on('join_room', async (gameId) => {
+    socket.on('join_room', async (gameId, callback) => {
       try {
         const membership = await UserGame.findOne({
           where: { UserId: socket.userId, GameId: Number(gameId) }
@@ -37,6 +52,8 @@ function registerGameSocket(io) {
         socket.gameId = Number(gameId);
         socket.gameRole = membership.role;
         console.log(`Socket ${socket.id} joined game ${gameId}`);
+        broadcastPresence(io, gameId);
+        if (typeof callback === 'function') callback(getOnlineUsers(io, gameId));
       } catch (error) {
         console.error('Error in join_room:', error);
         socket.emit('error', { message: 'Error joining game room', scope: 'room' });
@@ -47,11 +64,25 @@ function registerGameSocket(io) {
     // broadcasts from the old one
     socket.on('leave_room', () => {
       if (socket.gameId) {
-        socket.leave(String(socket.gameId));
-        console.log(`Socket ${socket.id} left game ${socket.gameId}`);
+        const leftGameId = socket.gameId;
+        socket.leave(String(leftGameId));
+        console.log(`Socket ${socket.id} left game ${leftGameId}`);
+        socket.gameId = undefined;
+        socket.gameRole = undefined;
+        broadcastPresence(io, leftGameId);
       }
-      socket.gameId = undefined;
-      socket.gameRole = undefined;
+    });
+
+    // rooms are already gone by 'disconnect', so capture gameId here while they still exist
+    socket.on('disconnecting', () => {
+      socket.disconnectingGameId = socket.gameId;
+    });
+
+    socket.on('disconnect', () => {
+      console.log(`Socket disconnected: ${socket.id}`);
+      if (socket.disconnectingGameId) {
+        broadcastPresence(io, socket.disconnectingGameId);
+      }
     });
 
     socket.on('move_token', async ({ tokenId, x, y }) => {

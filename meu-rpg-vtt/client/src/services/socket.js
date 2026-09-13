@@ -26,9 +26,9 @@ export function getSocket() {
   return socket;
 }
 
-export function joinRoom(gameId) {
+export function joinRoom(gameId, onJoined) {
   currentRoom = gameId;
-  socket?.emit('join_room', gameId);
+  socket?.emit('join_room', gameId, onJoined);
 }
 
 export function leaveRoom() {
