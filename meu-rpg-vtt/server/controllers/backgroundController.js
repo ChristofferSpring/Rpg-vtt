@@ -9,9 +9,20 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 
 const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
+const MIME_EXTENSIONS = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/gif': '.gif',
+  'image/webp': '.webp'
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, `${uuidv4()}${path.extname(file.originalname)}`)
+  // Extension must come from the validated mimetype, never from the
+  // client-supplied original filename (which could smuggle in a `.svg`/
+  // `.html` extension past the mimetype allowlist and be served as such by
+  // express.static, enabling stored XSS).
+  filename: (req, file, cb) => cb(null, `${uuidv4()}${MIME_EXTENSIONS[file.mimetype] || ''}`)
 });
 
 const upload = multer({
