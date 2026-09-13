@@ -20,6 +20,8 @@ router.get('/games/my-games', authMiddleware, gameController.listMyGames); // Li
 router.get('/games/:gameId/board', authMiddleware, requireGameMember, boardController.getBoard);
 router.get('/games/:gameId/members', authMiddleware, requireGameMember, boardController.getMembers);
 router.post('/games/:gameId/tokens', authMiddleware, requireGameMember, requireGameMaster, tokenController.createToken);
+router.patch('/games/:gameId/tokens/:tokenId', authMiddleware, requireGameMember, requireGameMaster, tokenController.updateToken);
+router.delete('/games/:gameId/tokens/:tokenId', authMiddleware, requireGameMember, requireGameMaster, tokenController.deleteToken);
 router.post(
   '/games/:gameId/background',
   authMiddleware,

@@ -6,6 +6,7 @@ import { getSocket } from '../services/socket';
 import Token from './Token';
 import CreateTokenPanel from './CreateTokenPanel';
 import BackgroundUploader from './BackgroundUploader';
+import EditTokenPanel from './EditTokenPanel';
 
 const CELL_SIZE = 50;
 
@@ -19,9 +20,12 @@ export default function GameMap({ user, game, onJoinGame }) {
     gridHeight: 30
   });
 
+  const [selectedTokenId, setSelectedTokenId] = useState(null);
+
   const isMaster = game.role === 'MASTER';
   const backgroundUrl = board.backgroundImageUrl ? `${BASE_URL}${board.backgroundImageUrl}` : null;
   const [backgroundImage] = useImage(backgroundUrl);
+  const selectedToken = board.tokens.find((t) => t.id === selectedTokenId) || null;
 
   // board fetch filters owner-only tokens server-side, but live broadcasts
   // don't, so we filter again here for both cases
@@ -62,6 +66,20 @@ export default function GameMap({ user, game, onJoinGame }) {
       setBoard((prev) => ({ ...prev, tokens: [...prev.tokens, token] }));
     };
 
+    const handleTokenUpdated = (token) => {
+      setBoard((prev) => ({
+        ...prev,
+        tokens: canSee(token)
+          ? prev.tokens.map((t) => (t.id === token.id ? token : t))
+          : prev.tokens.filter((t) => t.id !== token.id)
+      }));
+    };
+
+    const handleTokenDeleted = ({ tokenId }) => {
+      setSelectedTokenId((current) => (current === tokenId ? null : current));
+      setBoard((prev) => ({ ...prev, tokens: prev.tokens.filter((t) => t.id !== tokenId) }));
+    };
+
     const handleBackgroundUpdated = ({ backgroundImageUrl }) => {
       setBoard((prev) => ({ ...prev, backgroundImageUrl }));
     };
@@ -74,12 +92,16 @@ export default function GameMap({ user, game, onJoinGame }) {
 
     socket.on('token_moved', handleTokenMoved);
     socket.on('token_created', handleTokenCreated);
+    socket.on('token_updated', handleTokenUpdated);
+    socket.on('token_deleted', handleTokenDeleted);
     socket.on('background_updated', handleBackgroundUpdated);
     socket.on('error', handleError);
 
     return () => {
       socket.off('token_moved', handleTokenMoved);
       socket.off('token_created', handleTokenCreated);
+      socket.off('token_updated', handleTokenUpdated);
+      socket.off('token_deleted', handleTokenDeleted);
       socket.off('background_updated', handleBackgroundUpdated);
       socket.off('error', handleError);
     };
@@ -137,45 +159,59 @@ export default function GameMap({ user, game, onJoinGame }) {
               cellSize={CELL_SIZE}
               draggable={isMaster || token.ownerId === user.userId}
               onMove={handleMoveToken}
+              onSelect={isMaster ? (t) => setSelectedTokenId(t.id) : undefined}
             />
           ))}
         </Layer>
       </Stage>
 
-      <FloatingMenu onExit={handleLeave} isMaster={isMaster} game={game} />
+      <FloatingMenu
+        onExit={handleLeave}
+        isMaster={isMaster}
+        game={game}
+        selectedToken={selectedToken}
+        onCloseEdit={() => setSelectedTokenId(null)}
+      />
     </div>
   );
 }
 
-function FloatingMenu({ onExit, isMaster, game }) {
+function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit }) {
   const [open, setOpen] = React.useState(false);
+  const isOpen = open || !!selectedToken;
 
   return (
     <div style={{ position: 'absolute', bottom: '20px', left: '20px' }}>
-      {open && (
+      {isOpen && (
         <div style={{
             marginBottom: '10px', background: 'white', color: 'black',
             padding: '10px', borderRadius: '5px', width: '200px'
         }}>
-          <div>🛠️ Tools</div>
-          <div>🎲 Dice</div>
-          <div>📏 Ruler</div>
-          {isMaster && <CreateTokenPanel game={game} />}
-          {isMaster && <BackgroundUploader game={game} />}
-          <div>
-            <button onClick={onExit}> back </button>
-          </div>
+          {selectedToken ? (
+            <EditTokenPanel game={game} token={selectedToken} onClose={onCloseEdit} />
+          ) : (
+            <>
+              <div>🛠️ Tools</div>
+              <div>🎲 Dice</div>
+              <div>📏 Ruler</div>
+              {isMaster && <CreateTokenPanel game={game} />}
+              {isMaster && <BackgroundUploader game={game} />}
+              <div>
+                <button onClick={onExit}> back </button>
+              </div>
+            </>
+          )}
         </div>
       )}
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => (selectedToken ? onCloseEdit() : setOpen(!open))}
         style={{
             width: '50px', height: '50px', borderRadius: '50%',
             border: 'none', background: '#e53e3e', color: 'white',
             fontSize: '24px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
         }}
       >
-        {open ? 'x' : '+'}
+        {isOpen ? 'x' : '+'}
       </button>
     </div>
   );

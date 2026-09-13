@@ -54,6 +54,12 @@ export const api = {
   createToken: (gameId, tokenData) =>
     request(`/api/games/${gameId}/tokens`, { method: 'POST', body: JSON.stringify(tokenData) }),
 
+  updateToken: (gameId, tokenId, tokenData) =>
+    request(`/api/games/${gameId}/tokens/${tokenId}`, { method: 'PATCH', body: JSON.stringify(tokenData) }),
+
+  deleteToken: (gameId, tokenId) =>
+    request(`/api/games/${gameId}/tokens/${tokenId}`, { method: 'DELETE' }),
+
   uploadBackground: (gameId, file) => {
     const formData = new FormData();
     formData.append('background', file);
