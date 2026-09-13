@@ -5,6 +5,7 @@ import { api, BASE_URL } from '../services/api';
 import { getSocket } from '../services/socket';
 import Token from './Token';
 import CreateTokenPanel from './CreateTokenPanel';
+import BackgroundUploader from './BackgroundUploader';
 
 const CELL_SIZE = 50;
 
@@ -144,6 +145,7 @@ function FloatingMenu({ onExit, isMaster, game }) {
           <div>🎲 Dice</div>
           <div>📏 Ruler</div>
           {isMaster && <CreateTokenPanel game={game} />}
+          {isMaster && <BackgroundUploader game={game} />}
           <div>
             <button onClick={onExit}> back </button>
           </div>
