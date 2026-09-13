@@ -36,8 +36,21 @@ function registerGameSocket(io) {
         socket.gameRole = membership.role;
         console.log(`Socket ${socket.id} joined game ${gameId}`);
       } catch (error) {
+        console.error('Error in join_room:', error);
         socket.emit('error', { message: 'Error joining game room' });
       }
+    });
+
+    // Counterpart to join_room: leaves the current game's room (if any) and
+    // clears the room-scoped socket state, so a client switching games or
+    // returning to the Dashboard doesn't keep receiving that game's broadcasts.
+    socket.on('leave_room', () => {
+      if (socket.gameId) {
+        socket.leave(String(socket.gameId));
+        console.log(`Socket ${socket.id} left game ${socket.gameId}`);
+      }
+      socket.gameId = undefined;
+      socket.gameRole = undefined;
     });
 
     socket.on('move_token', async ({ tokenId, x, y }) => {
@@ -62,6 +75,7 @@ function registerGameSocket(io) {
         await token.update({ x, y });
         io.to(String(socket.gameId)).emit('token_moved', { tokenId: token.id, x, y });
       } catch (error) {
+        console.error('Error in move_token:', error);
         socket.emit('error', { message: 'Error moving token' });
       }
     });
@@ -81,6 +95,7 @@ function registerGameSocket(io) {
         });
         io.to(String(socket.gameId)).emit('new_message', message);
       } catch (error) {
+        console.error('Error in send_message:', error);
         socket.emit('error', { message: 'Error sending message' });
       }
     });

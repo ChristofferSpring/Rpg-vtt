@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Rect, Line, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import { api, BASE_URL } from '../services/api';
@@ -22,6 +22,15 @@ export default function GameMap({ user, game, onJoinGame }) {
   const isMaster = game.role === 'MASTER';
   const backgroundUrl = board.backgroundImageUrl ? `${BASE_URL}${board.backgroundImageUrl}` : null;
   const [backgroundImage] = useImage(backgroundUrl);
+
+  // Owner-only tokens must never render for anyone but the GM or the
+  // token's own owner. The initial GET /board fetch already filters these
+  // server-side, but live 'token_created' broadcasts do not, so this same
+  // predicate is applied both to incoming broadcasts and at render time.
+  const canSee = useCallback(
+    (t) => t.visibility !== 'owner' || isMaster || t.ownerId === user.userId,
+    [isMaster, user.userId]
+  );
 
   useEffect(() => {
     function updateSize() {
@@ -51,6 +60,7 @@ export default function GameMap({ user, game, onJoinGame }) {
     };
 
     const handleTokenCreated = (token) => {
+      if (!canSee(token)) return;
       setBoard((prev) => ({ ...prev, tokens: [...prev.tokens, token] }));
     };
 
@@ -58,16 +68,28 @@ export default function GameMap({ user, game, onJoinGame }) {
       setBoard((prev) => ({ ...prev, backgroundImageUrl }));
     };
 
+    // A rejected move_token (or other server-side denial) still shows the
+    // token wherever Konva optimistically dragged it to on screen. Re-fetch
+    // the authoritative board on any 'error' to correct the visual desync.
+    const handleError = () => {
+      api.getBoard(game.id).then(setBoard).catch((err) => console.error('Error reloading board:', err));
+    };
+
     socket.on('token_moved', handleTokenMoved);
     socket.on('token_created', handleTokenCreated);
     socket.on('background_updated', handleBackgroundUpdated);
+    socket.on('error', handleError);
 
     return () => {
       socket.off('token_moved', handleTokenMoved);
       socket.off('token_created', handleTokenCreated);
       socket.off('background_updated', handleBackgroundUpdated);
+      socket.off('error', handleError);
     };
-  }, []);
+    // canSee/game.id are included so a game switch without a full remount
+    // (see App.jsx's join/leave-room effect) can't leave these handlers
+    // running the previous game's visibility check or refetching the wrong board.
+  }, [canSee, game.id]);
 
   const handleMoveToken = (tokenId, x, y) => {
     getSocket()?.emit('move_token', { tokenId, x, y });
@@ -114,7 +136,7 @@ export default function GameMap({ user, game, onJoinGame }) {
             <KonvaImage image={backgroundImage} width={mapWidth} height={mapHeight} />
           )}
           {gridLines}
-          {board.tokens.map((token) => (
+          {board.tokens.filter(canSee).map((token) => (
             <Token
               key={token.id}
               token={token}

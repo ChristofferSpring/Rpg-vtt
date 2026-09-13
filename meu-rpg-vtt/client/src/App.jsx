@@ -6,7 +6,7 @@ import ChatSidebar from './components/ChatSidebar';
 import GameMap from './components/GameMap';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
-import { connectSocket, disconnectSocket, getSocket } from './services/socket';
+import { connectSocket, disconnectSocket, getSocket, joinRoom, leaveRoom } from './services/socket';
 
 function App() {
   const [currentGame, setCurrentGame] = useState(null);
@@ -24,11 +24,25 @@ function App() {
     }
   }, [user]);
 
-  // Joins the socket room for the current game (server listens for 'join_room')
+  // Joins the socket room for the current game (server listens for 'join_room'),
+  // and leaves it again on cleanup so switching games (or returning to the
+  // Dashboard) can never leave the socket in two rooms at once.
   useEffect(() => {
-    if (currentGame) {
-      getSocket()?.emit('join_room', currentGame.id);
-    }
+    if (!currentGame) return;
+
+    joinRoom(currentGame.id);
+
+    const socket = getSocket();
+    const handleError = (payload) => {
+      alert(payload?.message || 'Error joining game');
+      setCurrentGame(null);
+    };
+    socket?.on('error', handleError);
+
+    return () => {
+      socket?.off('error', handleError);
+      leaveRoom();
+    };
   }, [currentGame]);
 
   const handleLogin = (userData) => {
@@ -38,6 +52,7 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
+    setCurrentGame(null);
     localStorage.removeItem('rpg_user');
     disconnectSocket();
   };
