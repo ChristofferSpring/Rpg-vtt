@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { UserGame, Token, ChatMessage } = require('../database/db');
 
+const ALLOWED_DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
+const MAX_DICE_COUNT = 20;
+
 function registerGameSocket(io) {
   // check the JWT before accepting the connection at all
   io.use((socket, next) => {
@@ -95,6 +98,36 @@ function registerGameSocket(io) {
       } catch (error) {
         console.error('Error in send_message:', error);
         socket.emit('error', { message: 'Error sending message', scope: 'action' });
+      }
+    });
+
+    socket.on('roll_dice', async ({ sides, count }) => {
+      if (!socket.gameId) {
+        socket.emit('error', { message: 'Join a game room first', scope: 'action' });
+        return;
+      }
+      const rollCount = Number(count) || 1;
+      if (!ALLOWED_DICE_SIDES.includes(Number(sides)) || rollCount < 1 || rollCount > MAX_DICE_COUNT) {
+        socket.emit('error', { message: 'Invalid dice roll', scope: 'action' });
+        return;
+      }
+      try {
+        const rolls = Array.from({ length: rollCount }, () => 1 + Math.floor(Math.random() * sides));
+        const total = rolls.reduce((sum, roll) => sum + roll, 0);
+        const text = rollCount === 1
+          ? `🎲 rolled a d${sides}: ${total}`
+          : `🎲 rolled ${rollCount}d${sides}: ${rolls.join(' + ')} = ${total}`;
+
+        const message = await ChatMessage.create({
+          GameId: socket.gameId,
+          UserId: socket.userId,
+          username: socket.username,
+          text
+        });
+        io.to(String(socket.gameId)).emit('new_message', message);
+      } catch (error) {
+        console.error('Error in roll_dice:', error);
+        socket.emit('error', { message: 'Error rolling dice', scope: 'action' });
       }
     });
   });

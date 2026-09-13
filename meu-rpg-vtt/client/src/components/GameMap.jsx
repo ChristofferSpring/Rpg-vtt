@@ -7,6 +7,7 @@ import Token from './Token';
 import CreateTokenPanel from './CreateTokenPanel';
 import BackgroundUploader from './BackgroundUploader';
 import EditTokenPanel from './EditTokenPanel';
+import DicePanel from './DicePanel';
 
 const CELL_SIZE = 50;
 
@@ -252,8 +253,8 @@ function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit }) {
           ) : (
             <>
               <div>🛠️ Tools</div>
-              <div>🎲 Dice</div>
               <div>📏 Ruler</div>
+              <DicePanel />
               {isMaster && <CreateTokenPanel game={game} />}
               {isMaster && <BackgroundUploader game={game} />}
               <div>
