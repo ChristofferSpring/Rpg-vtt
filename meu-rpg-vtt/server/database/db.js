@@ -83,6 +83,6 @@ async function ensureGameColumns() {
   }
 }
 
-sequelize.sync().then(ensureGameColumns);
+const ready = sequelize.sync().then(ensureGameColumns);
 
-module.exports = { sequelize, User, Game, UserGame, Token, ChatMessage };
+module.exports = { sequelize, User, Game, UserGame, Token, ChatMessage, ready };

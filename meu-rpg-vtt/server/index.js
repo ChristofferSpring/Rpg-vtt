@@ -6,6 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const routes = require('./routes');
 const registerGameSocket = require('./sockets/gameSocket');
+const { ready } = require('./database/db');
 
 const app = express();
 
@@ -42,6 +43,17 @@ app.get(/.*/, (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`🚀 SERVER RUNNING ON ${PORT}`);
-});
+
+// Don't accept requests until the schema (tables + additive column
+// migrations) is confirmed ready — otherwise a cold start against an
+// unmigrated database could serve requests before tables/columns exist.
+ready
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`🚀 SERVER RUNNING ON ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Schema initialization failed:', error);
+    process.exit(1);
+  });
