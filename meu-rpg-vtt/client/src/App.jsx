@@ -34,8 +34,10 @@ function App() {
 
     const socket = getSocket();
     const handleError = (payload) => {
-      alert(payload?.message || 'Error joining game');
-      setCurrentGame(null);
+      if (payload?.scope === 'room') {
+        alert(payload?.message || 'Error joining game');
+        setCurrentGame(null);
+      }
     };
     socket?.on('error', handleError);
 

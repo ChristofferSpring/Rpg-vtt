@@ -28,7 +28,7 @@ function registerGameSocket(io) {
           where: { UserId: socket.userId, GameId: Number(gameId) }
         });
         if (!membership) {
-          socket.emit('error', { message: 'Not a member of this game' });
+          socket.emit('error', { message: 'Not a member of this game', scope: 'room' });
           return;
         }
         socket.join(String(gameId));
@@ -37,7 +37,7 @@ function registerGameSocket(io) {
         console.log(`Socket ${socket.id} joined game ${gameId}`);
       } catch (error) {
         console.error('Error in join_room:', error);
-        socket.emit('error', { message: 'Error joining game room' });
+        socket.emit('error', { message: 'Error joining game room', scope: 'room' });
       }
     });
 
@@ -55,20 +55,20 @@ function registerGameSocket(io) {
 
     socket.on('move_token', async ({ tokenId, x, y }) => {
       if (!socket.gameId) {
-        socket.emit('error', { message: 'Join a game room first' });
+        socket.emit('error', { message: 'Join a game room first', scope: 'action' });
         return;
       }
       try {
         const token = await Token.findByPk(tokenId);
         if (!token || token.GameId !== socket.gameId) {
-          socket.emit('error', { message: 'Token not found in this game' });
+          socket.emit('error', { message: 'Token not found in this game', scope: 'action' });
           return;
         }
 
         const isMaster = socket.gameRole === 'MASTER';
         const isOwner = token.ownerId === socket.userId;
         if (!isMaster && !isOwner) {
-          socket.emit('error', { message: 'You cannot move this token' });
+          socket.emit('error', { message: 'You cannot move this token', scope: 'action' });
           return;
         }
 
@@ -76,13 +76,13 @@ function registerGameSocket(io) {
         io.to(String(socket.gameId)).emit('token_moved', { tokenId: token.id, x, y });
       } catch (error) {
         console.error('Error in move_token:', error);
-        socket.emit('error', { message: 'Error moving token' });
+        socket.emit('error', { message: 'Error moving token', scope: 'action' });
       }
     });
 
     socket.on('send_message', async ({ text }) => {
       if (!socket.gameId) {
-        socket.emit('error', { message: 'Join a game room first' });
+        socket.emit('error', { message: 'Join a game room first', scope: 'action' });
         return;
       }
       if (!text || !text.trim()) return;
@@ -96,7 +96,7 @@ function registerGameSocket(io) {
         io.to(String(socket.gameId)).emit('new_message', message);
       } catch (error) {
         console.error('Error in send_message:', error);
-        socket.emit('error', { message: 'Error sending message' });
+        socket.emit('error', { message: 'Error sending message', scope: 'action' });
       }
     });
   });
