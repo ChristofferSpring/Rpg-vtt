@@ -42,6 +42,21 @@ npx nodemon index.js
 **Expose to the Internet With the server running, open a new terminal and initialize ngrok:**
 ngrok http 3001
 
+# Deploy (Railway)
+
+The repo root has a `package.json` (build/start scripts) and `railway.json`
+so Railway's Nixpacks builder can run this monorepo as a single service —
+Express already serves the built client and the API from the same process.
+
+1. New Railway project from this GitHub repo.
+2. Set env vars on the service (see `server/.env.example`): `JWT_SECRET`
+   and `DATABASE_URL` (a Postgres connection string, e.g. Supabase's
+   Session pooler URI). `PORT` is injected by Railway automatically.
+3. Deploy. Railway runs `npm run build` then `npm start` from the root.
+
+Known gap: uploaded images (`server/uploads/`) still live on local disk,
+so they don't survive a redeploy yet.
+
 # installing
 **server file**
 npm init -y
