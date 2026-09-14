@@ -36,7 +36,8 @@ const Token = sequelize.define('Token', {
   y: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
   color: { type: DataTypes.STRING, allowNull: false, defaultValue: '#3182ce' },
   label: { type: DataTypes.STRING, allowNull: false },
-  visibility: { type: DataTypes.ENUM('all', 'owner'), defaultValue: 'all' }
+  visibility: { type: DataTypes.ENUM('all', 'owner'), defaultValue: 'all' },
+  imageUrl: { type: DataTypes.STRING, allowNull: true }
 });
 
 // 5. A chat line in a game's room
@@ -66,19 +67,26 @@ ChatMessage.belongsTo(User);
 
 // alter:true rebuilds tables on every boot and blows up once foreign keys
 // exist, so new columns get added by hand below instead
-async function ensureGameColumns() {
-  const [columns] = await sequelize.query('PRAGMA table_info(`Games`)');
-  const existing = columns.map((column) => column.name);
+async function ensureColumns(table, columns) {
+  const [existingColumns] = await sequelize.query(`PRAGMA table_info(\`${table}\`)`);
+  const existing = existingColumns.map((column) => column.name);
 
-  const missing = [
-    { name: 'backgroundImageUrl', sql: 'ALTER TABLE `Games` ADD COLUMN `backgroundImageUrl` VARCHAR(255)' },
-    { name: 'gridWidth', sql: 'ALTER TABLE `Games` ADD COLUMN `gridWidth` INTEGER DEFAULT 40' },
-    { name: 'gridHeight', sql: 'ALTER TABLE `Games` ADD COLUMN `gridHeight` INTEGER DEFAULT 30' }
-  ].filter((column) => !existing.includes(column.name));
-
+  const missing = columns.filter((column) => !existing.includes(column.name));
   for (const column of missing) {
     await sequelize.query(column.sql);
   }
+}
+
+async function ensureGameColumns() {
+  await ensureColumns('Games', [
+    { name: 'backgroundImageUrl', sql: 'ALTER TABLE `Games` ADD COLUMN `backgroundImageUrl` VARCHAR(255)' },
+    { name: 'gridWidth', sql: 'ALTER TABLE `Games` ADD COLUMN `gridWidth` INTEGER DEFAULT 40' },
+    { name: 'gridHeight', sql: 'ALTER TABLE `Games` ADD COLUMN `gridHeight` INTEGER DEFAULT 30' }
+  ]);
+
+  await ensureColumns('Tokens', [
+    { name: 'imageUrl', sql: 'ALTER TABLE `Tokens` ADD COLUMN `imageUrl` VARCHAR(255)' }
+  ]);
 }
 
 const ready = sequelize.sync().then(ensureGameColumns);

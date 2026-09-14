@@ -1,4 +1,7 @@
 const { Token, UserGame } = require('../database/db');
+const imageUploadMiddleware = require('../middleware/imageUpload');
+
+exports.uploadImageMiddleware = imageUploadMiddleware('image');
 
 async function isValidOwner(gameId, ownerId) {
   if (!ownerId) return true;
@@ -70,6 +73,29 @@ exports.updateToken = async (req, res) => {
     res.json(token);
   } catch (error) {
     res.status(500).json({ error: 'Error updating token' });
+  }
+};
+
+exports.uploadTokenImage = async (req, res) => {
+  const gameId = Number(req.params.gameId);
+  const tokenId = Number(req.params.tokenId);
+  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+  try {
+    const token = await Token.findByPk(tokenId);
+    if (!token || token.GameId !== gameId) {
+      return res.status(404).json({ error: 'Token not found in this game' });
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    await token.update({ imageUrl });
+
+    const io = req.app.get('io');
+    io.to(String(gameId)).emit('token_updated', token);
+
+    res.json(token);
+  } catch (error) {
+    res.status(500).json({ error: 'Error uploading token image' });
   }
 };
 

@@ -23,6 +23,14 @@ router.post('/games/:gameId/tokens', authMiddleware, requireGameMember, requireG
 router.patch('/games/:gameId/tokens/:tokenId', authMiddleware, requireGameMember, requireGameMaster, tokenController.updateToken);
 router.delete('/games/:gameId/tokens/:tokenId', authMiddleware, requireGameMember, requireGameMaster, tokenController.deleteToken);
 router.post(
+  '/games/:gameId/tokens/:tokenId/image',
+  authMiddleware,
+  requireGameMember,
+  requireGameMaster,
+  tokenController.uploadImageMiddleware,
+  tokenController.uploadTokenImage
+);
+router.post(
   '/games/:gameId/background',
   authMiddleware,
   requireGameMember,

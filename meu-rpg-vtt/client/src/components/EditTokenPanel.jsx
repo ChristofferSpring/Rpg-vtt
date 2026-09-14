@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import { api, BASE_URL } from '../services/api';
 
 export default function EditTokenPanel({ game, token, onClose }) {
   const [members, setMembers] = useState([]);
@@ -39,6 +39,16 @@ export default function EditTokenPanel({ game, token, onClose }) {
     }
   };
 
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      await api.uploadTokenImage(game.id, token.id, file);
+    } catch (err) {
+      alert("Couldn't upload that: " + err.message);
+    }
+  };
+
   return (
     <div style={{ borderTop: '1px solid #ccc', marginTop: '10px', paddingTop: '10px' }}>
       <div>Edit token</div>
@@ -64,6 +74,12 @@ export default function EditTokenPanel({ game, token, onClose }) {
         <option value="all">Visible to all</option>
         <option value="owner">Hidden (GM + owner only)</option>
       </select>
+      <div style={{ marginBottom: '5px' }}>
+        {token.imageUrl && (
+          <img src={`${BASE_URL}${token.imageUrl}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', verticalAlign: 'middle', marginRight: '5px' }} />
+        )}
+        <input type="file" accept="image/*" onChange={handleImageChange} />
+      </div>
       <button onClick={handleSave} style={{ width: '100%', marginBottom: '5px' }}>Save</button>
       <button onClick={handleDelete} style={{ width: '100%', marginBottom: '5px', background: '#e53e3e', color: 'white', border: 'none' }}>Delete</button>
       <button onClick={onClose} style={{ width: '100%' }}>Cancel</button>

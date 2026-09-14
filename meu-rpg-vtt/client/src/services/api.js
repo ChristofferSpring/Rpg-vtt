@@ -65,4 +65,10 @@ export const api = {
     formData.append('background', file);
     return request(`/api/games/${gameId}/background`, { method: 'POST', body: formData });
   },
+
+  uploadTokenImage: (gameId, tokenId, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return request(`/api/games/${gameId}/tokens/${tokenId}/image`, { method: 'POST', body: formData });
+  },
 };
