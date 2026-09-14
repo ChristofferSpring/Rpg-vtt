@@ -1,70 +1,49 @@
-# RPG Virtual Tabletop (VTT)
+# RPG Virtual Tabletop
 
-A real-time Virtual Tabletop (VTT) application designed for tabletop RPG sessions. This project allows Game Masters to manage maps and grids while players interact with tokens in real-time, leveraging WebSockets for instant synchronization.
+Virtual tabletop for RPG sessions. Move tokens, roll dice, draw on the map, chat — synced live between everyone at the table.
 
-## Tech Stack
+Live: https://rpg-vtt-production.up.railway.app
 
-The project follows a **Monorepo** architecture, separating concerns between the client-side interface and the server-side logic.
+## Stack
 
-### Frontend (Client)
-* **React + Vite:** Utilized for a modern, fast, and modular UI development experience.
-* **Konva.js + React-Konva:** A high-performance 2D Canvas library. Selected to handle complex rendering of the grid, map layers, and tokens efficiently (superior to standard DOM manipulation).
-* **CSS Flexbox:** Ensures a responsive, application-like layout (Sidebar, Full-screen Map, Floating Menus).
+- Client: React + Vite, Konva for the canvas (grid, tokens, drawing).
+- Server: Node + Express, Socket.io for the real-time sync.
+- Database: Postgres. Falls back to a local SQLite file if `DATABASE_URL` isn't set, so local dev needs no database setup.
 
-### Backend (Server)
-* **Node.js + Express:** Handles API routing and serves static assets (production build).
-* **Socket.io:** Powers the bidirectional event-based communication. This ensures that game state changes (e.g., token movement) are propagated to all connected clients with low latency.
+## Running it locally
 
----
-# Development Mode
+Needs two terminals.
 
-Use this mode for active development. It enables Hot Module Replacement (HMR) for React. You will need two terminal instances.
-
-Terminal 1 (Backend) (Runs on port 3001):
+Backend (port 3001):
+```
 cd server
+npm install
 npx nodemon index.js
+```
 
-Terminal 2 (Frontend):
+Frontend:
+```
 cd client
+npm install
 npm run dev
+```
 
-# Production & Remote Access (ngrok)
-Use this workflow to simulate a production environment and allow external access (e.g., for playtesting with friends).
+Copy `server/.env.example` to `server/.env` and set `JWT_SECRET` to any random string. Leave `DATABASE_URL` empty to use SQLite.
 
-Step A: Build the Frontend Compile the React application into static files:
-cd client
-npm run build
+## Features
 
-**Step B: Start the Server**
-cd server
-npx nodemon index.js
+- Real-time map: move tokens, see everyone else's moves live, presence panel showing who's online.
+- Tokens can carry a custom image instead of a plain color circle.
+- Dice roller, results post to chat.
+- Ruler for measuring distance on the grid.
+- Pencil and eraser for drawing on the map — the eraser removes a whole stroke at once, not pixel by pixel.
+- Chat, saved per game.
+- Tokens snap to the grid when moved.
 
-**Expose to the Internet With the server running, open a new terminal and initialize ngrok:**
-ngrok http 3001
+## Deploying
 
-# Deploy (Railway)
+Runs on Railway, database on Supabase (Postgres). The root `package.json` and `railway.json` tell Railway how to build and start it: `npm run build` builds the client, `npm start` runs the server, which also serves the built client — same origin, no separate frontend host needed.
 
-The repo root has a `package.json` (build/start scripts) and `railway.json`
-so Railway's Nixpacks builder can run this monorepo as a single service —
-Express already serves the built client and the API from the same process.
+To deploy your own copy: new Railway project pointed at this repo, then set `JWT_SECRET` and `DATABASE_URL` as service variables (a Postgres connection string — Supabase's free tier works fine). `PORT` is set by Railway automatically, don't add it yourself.
 
-1. New Railway project from this GitHub repo.
-2. Set env vars on the service (see `server/.env.example`): `JWT_SECRET`
-   and `DATABASE_URL` (a Postgres connection string, e.g. Supabase's
-   Session pooler URI). `PORT` is injected by Railway automatically.
-3. Deploy. Railway runs `npm run build` then `npm start` from the root.
-
-Known gap: uploaded images (`server/uploads/`) still live on local disk,
-so they don't survive a redeploy yet.
-
-# installing
-**server file**
-npm init -y
-npm install express socket.io cors
-npm install --save-dev nodemon
-npm install uuid
-
-**client file**
-npm create vite@latest client -- --template react
-npm install 
-npm install konva react-konva use-image socket.io-client
+Known limitation: uploaded images (map backgrounds, token pictures) are saved to local disk on the server, so they don't survive a redeploy yet.
