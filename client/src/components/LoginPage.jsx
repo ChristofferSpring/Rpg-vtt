@@ -36,7 +36,7 @@ export default function LoginPage({ onLogin }) {
         padding: '40px', background: '#2d3748', borderRadius: '8px', 
         display: 'flex', flexDirection: 'column', gap: '15px', width: '300px'
       }}>
-        <h2>{isRegister ? 'Create Account' : 'RPG4v Login'}</h2>
+        <h2>{isRegister ? 'Create Account' : 'RPG VTT Login'}</h2>
 
         {error && <div style={{ color: '#fc8181' }}>{error}</div>}
 
