@@ -1,11 +1,20 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, '..', 'database.sqlite'),
-  logging: false
-});
+// DATABASE_URL set -> managed Postgres (Supabase); otherwise local SQLite,
+// so dev still works with zero setup
+const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      protocol: 'postgres',
+      dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+      logging: false
+    })
+  : new Sequelize({
+      dialect: 'sqlite',
+      storage: path.join(__dirname, '..', 'database.sqlite'),
+      logging: false
+    });
 
 // 1. The User (global)
 const User = sequelize.define('User', {
@@ -66,26 +75,28 @@ User.hasMany(ChatMessage);
 ChatMessage.belongsTo(User);
 
 // alter:true rebuilds tables on every boot and blows up once foreign keys
-// exist, so new columns get added by hand below instead
+// exist, so new columns get added by hand below instead. Uses the query
+// interface (not raw SQL) so this works on both SQLite and Postgres.
 async function ensureColumns(table, columns) {
-  const [existingColumns] = await sequelize.query(`PRAGMA table_info(\`${table}\`)`);
-  const existing = existingColumns.map((column) => column.name);
+  const queryInterface = sequelize.getQueryInterface();
+  const existing = await queryInterface.describeTable(table);
 
-  const missing = columns.filter((column) => !existing.includes(column.name));
-  for (const column of missing) {
-    await sequelize.query(column.sql);
+  for (const column of columns) {
+    if (!existing[column.name]) {
+      await queryInterface.addColumn(table, column.name, column.type);
+    }
   }
 }
 
 async function ensureGameColumns() {
   await ensureColumns('Games', [
-    { name: 'backgroundImageUrl', sql: 'ALTER TABLE `Games` ADD COLUMN `backgroundImageUrl` VARCHAR(255)' },
-    { name: 'gridWidth', sql: 'ALTER TABLE `Games` ADD COLUMN `gridWidth` INTEGER DEFAULT 40' },
-    { name: 'gridHeight', sql: 'ALTER TABLE `Games` ADD COLUMN `gridHeight` INTEGER DEFAULT 30' }
+    { name: 'backgroundImageUrl', type: { type: DataTypes.STRING, allowNull: true } },
+    { name: 'gridWidth', type: { type: DataTypes.INTEGER, defaultValue: 40 } },
+    { name: 'gridHeight', type: { type: DataTypes.INTEGER, defaultValue: 30 } }
   ]);
 
   await ensureColumns('Tokens', [
-    { name: 'imageUrl', sql: 'ALTER TABLE `Tokens` ADD COLUMN `imageUrl` VARCHAR(255)' }
+    { name: 'imageUrl', type: { type: DataTypes.STRING, allowNull: true } }
   ]);
 }
 
