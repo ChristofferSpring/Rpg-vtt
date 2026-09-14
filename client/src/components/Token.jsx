@@ -3,7 +3,7 @@ import { Circle, Text, Group } from 'react-konva';
 import useImage from 'use-image';
 import { BASE_URL } from '../services/api';
 
-export default function Token({ token, cellSize, draggable, selected, onMove, onSelect }) {
+export default function Token({ token, cellSize, draggable, selected, onMove, onSelect, onDragMove }) {
   const radius = cellSize * 0.4;
   const [image] = useImage(token.imageUrl ? `${BASE_URL}${token.imageUrl}` : null);
 
@@ -12,6 +12,7 @@ export default function Token({ token, cellSize, draggable, selected, onMove, on
       x={token.x}
       y={token.y}
       draggable={draggable}
+      onDragMove={(e) => onDragMove?.(token.id, e.target.x(), e.target.y())}
       onDragEnd={(e) => onMove(token.id, e.target.x(), e.target.y())}
       onClick={() => onSelect?.(token)}
       onTap={() => onSelect?.(token)}

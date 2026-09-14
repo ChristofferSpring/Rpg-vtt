@@ -28,12 +28,18 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
   const [editingTokenId, setEditingTokenId] = useState(null);
   const [rulerMode, setRulerMode] = useState(false);
   const [rulerPoints, setRulerPoints] = useState(null);
+  const [dragPreview, setDragPreview] = useState(null);
+  const [placingToken, setPlacingToken] = useState(null);
+  const [ghostPos, setGhostPos] = useState(null);
 
   const isMaster = game.role === 'MASTER';
   const backgroundUrl = board.backgroundImageUrl ? `${BASE_URL}${board.backgroundImageUrl}` : null;
   const [backgroundImage] = useImage(backgroundUrl);
   const pickedToken = board.tokens.find((t) => t.id === pickedTokenId) || null;
   const editingToken = board.tokens.find((t) => t.id === editingTokenId) || null;
+  const bubbleToken = dragPreview && pickedToken && dragPreview.tokenId === pickedToken.id
+    ? { ...pickedToken, x: dragPreview.x, y: dragPreview.y }
+    : pickedToken;
 
   const deselectToken = () => {
     setPickedTokenId(null);
@@ -123,8 +129,52 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
 
   const snapToGrid = (value) => Math.round((value - CELL_SIZE / 2) / CELL_SIZE) * CELL_SIZE + CELL_SIZE / 2;
 
+  const handleDragMove = (tokenId, x, y) => {
+    setDragPreview({ tokenId, x, y });
+  };
+
   const handleMoveToken = (tokenId, x, y) => {
-    getSocket()?.emit('move_token', { tokenId, x: snapToGrid(x), y: snapToGrid(y) });
+    const snapped = { x: snapToGrid(x), y: snapToGrid(y) };
+    setDragPreview(null);
+    // update locally right away so the token and its bubbles land together -
+    // no waiting on the round trip to the server to see it settle
+    setBoard((prev) => ({
+      ...prev,
+      tokens: prev.tokens.map((t) => (t.id === tokenId ? { ...t, ...snapped } : t))
+    }));
+    getSocket()?.emit('move_token', { tokenId, ...snapped });
+  };
+
+  const handleStartPlacing = (tokenSpec) => {
+    deselectToken();
+    setPlacingToken(tokenSpec);
+    setGhostPos(null);
+  };
+
+  const handleCancelPlacing = () => {
+    setPlacingToken(null);
+    setGhostPos(null);
+  };
+
+  const confirmPlacement = async (x, y) => {
+    if (!placingToken) return;
+    const spec = placingToken;
+    setPlacingToken(null);
+    setGhostPos(null);
+    try {
+      await api.createToken(game.id, { ...spec, x: snapToGrid(x), y: snapToGrid(y) });
+    } catch (err) {
+      alert("Couldn't create the token: " + err.message);
+    }
+  };
+
+  const handleBackgroundClick = (e) => {
+    if (placingToken) {
+      const pos = e.target.getStage().getRelativePointerPosition();
+      confirmPlacement(pos.x, pos.y);
+      return;
+    }
+    deselectToken();
   };
 
   const handleLeave = () => {
@@ -160,6 +210,11 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
         height={stageSize.height}
         draggable={!rulerMode}
         onClick={(e) => {
+          if (placingToken) {
+            const pos = e.target.getStage().getRelativePointerPosition();
+            confirmPlacement(pos.x, pos.y);
+            return;
+          }
           if (e.target === e.target.getStage()) deselectToken();
         }}
         onMouseDown={(e) => {
@@ -168,8 +223,9 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
           setRulerPoints({ start: pos, end: pos });
         }}
         onMouseMove={(e) => {
-          if (!rulerMode || !rulerPoints) return;
           const pos = e.target.getStage().getRelativePointerPosition();
+          if (placingToken) setGhostPos(pos);
+          if (!rulerMode || !rulerPoints) return;
           setRulerPoints((prev) => ({ ...prev, end: pos }));
         }}
         onWheel={(e) => {
@@ -183,9 +239,9 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
         }}
       >
         <Layer>
-          <Rect x={0} y={0} width={mapWidth} height={mapHeight} fill="#000" onClick={deselectToken} />
+          <Rect x={0} y={0} width={mapWidth} height={mapHeight} fill="#000" onClick={handleBackgroundClick} />
           {backgroundImage && (
-            <KonvaImage image={backgroundImage} width={mapWidth} height={mapHeight} onClick={deselectToken} />
+            <KonvaImage image={backgroundImage} width={mapWidth} height={mapHeight} onClick={handleBackgroundClick} />
           )}
           {gridLines}
           {board.tokens.filter(canSee).map((token) => (
@@ -193,20 +249,32 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
               key={token.id}
               token={token}
               cellSize={CELL_SIZE}
-              draggable={!rulerMode && (isMaster || token.ownerId === user.userId)}
+              draggable={!rulerMode && !placingToken && (isMaster || token.ownerId === user.userId)}
               selected={token.id === pickedTokenId}
               onMove={handleMoveToken}
-              onSelect={isMaster && !rulerMode ? (t) => setPickedTokenId(t.id) : undefined}
+              onDragMove={handleDragMove}
+              onSelect={isMaster && !rulerMode && !placingToken ? (t) => setPickedTokenId(t.id) : undefined}
             />
           ))}
           {pickedToken && !editingToken && (
             <TokenBubbles
-              token={pickedToken}
+              token={bubbleToken}
               cellSize={CELL_SIZE}
               onGear={() => setEditingTokenId(pickedToken.id)}
             />
           )}
           {rulerPoints && <RulerLine points={rulerPoints} cellSize={CELL_SIZE} />}
+          {placingToken && ghostPos && (
+            <Circle
+              x={snapToGrid(ghostPos.x)}
+              y={snapToGrid(ghostPos.y)}
+              radius={CELL_SIZE * 0.4}
+              stroke={placingToken.color}
+              strokeWidth={2}
+              dash={[6, 4]}
+              listening={false}
+            />
+          )}
         </Layer>
       </Stage>
 
@@ -218,6 +286,9 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
         onCloseEdit={deselectToken}
         rulerMode={rulerMode}
         onToggleRuler={toggleRulerMode}
+        placingToken={placingToken}
+        onCancelPlacing={handleCancelPlacing}
+        onStartPlacing={handleStartPlacing}
       />
     </div>
   );
@@ -287,9 +358,12 @@ function TokenBubbles({ token, cellSize, onGear }) {
   );
 }
 
-function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit, rulerMode, onToggleRuler }) {
+function FloatingMenu({
+  onExit, isMaster, game, selectedToken, onCloseEdit, rulerMode, onToggleRuler,
+  placingToken, onCancelPlacing, onStartPlacing
+}) {
   const [open, setOpen] = React.useState(false);
-  const isOpen = (open || !!selectedToken) && !rulerMode;
+  const isOpen = (open || !!selectedToken) && !rulerMode && !placingToken;
 
   const handleToggleRuler = () => {
     setOpen(false);
@@ -312,7 +386,7 @@ function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit, rule
                 Ruler
               </button>
               <DicePanel />
-              {isMaster && <CreateTokenPanel game={game} />}
+              {isMaster && <CreateTokenPanel game={game} onStartPlacing={onStartPlacing} />}
               {isMaster && <BackgroundUploader game={game} />}
               <div>
                 <button onClick={onExit}> back </button>
@@ -323,17 +397,19 @@ function FloatingMenu({ onExit, isMaster, game, selectedToken, onCloseEdit, rule
       )}
       <button
         onClick={() => {
+          if (placingToken) return onCancelPlacing();
           if (rulerMode) return onToggleRuler();
           if (selectedToken) return onCloseEdit();
           setOpen(!open);
         }}
         style={{
             width: '50px', height: '50px', borderRadius: '50%',
-            border: 'none', background: rulerMode ? '#3182ce' : '#e53e3e', color: 'white',
-            fontSize: rulerMode ? '14px' : '24px', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+            border: 'none', color: 'white', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+            background: placingToken ? '#dd6b20' : rulerMode ? '#3182ce' : '#e53e3e',
+            fontSize: placingToken || rulerMode ? '14px' : '24px'
         }}
       >
-        {rulerMode ? 'Stop' : (isOpen ? 'x' : '+')}
+        {placingToken ? 'Cancel' : rulerMode ? 'Stop' : (isOpen ? 'x' : '+')}
       </button>
     </div>
   );

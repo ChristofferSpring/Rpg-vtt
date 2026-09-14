@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 
-export default function CreateTokenPanel({ game }) {
+export default function CreateTokenPanel({ game, onStartPlacing }) {
   const [members, setMembers] = useState([]);
   const [label, setLabel] = useState('');
   const [color, setColor] = useState('#3182ce');
@@ -12,24 +12,18 @@ export default function CreateTokenPanel({ game }) {
     api.getMembers(game.id).then(setMembers).catch((err) => console.error('Error loading members:', err));
   }, [game.id]);
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!label.trim()) {
       alert('Give it a name first.');
       return;
     }
-    try {
-      await api.createToken(game.id, {
-        label: label.trim(),
-        color,
-        ownerId: ownerId ? Number(ownerId) : null,
-        visibility,
-        x: 0,
-        y: 0
-      });
-      setLabel('');
-    } catch (err) {
-      alert("Couldn't create the token: " + err.message);
-    }
+    onStartPlacing({
+      label: label.trim(),
+      color,
+      ownerId: ownerId ? Number(ownerId) : null,
+      visibility
+    });
+    setLabel('');
   };
 
   return (

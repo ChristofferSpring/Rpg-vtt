@@ -16,6 +16,8 @@ export default function LoginPage({ onLogin }) {
         await api.register(username, password);
         alert('Account created, log in below.');
         setIsRegister(false);
+        setUsername('');
+        setPassword('');
       } else {
         const data = await api.login(username, password);
         onLogin(data); // data contains { token, username, userId }
