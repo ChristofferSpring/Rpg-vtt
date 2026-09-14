@@ -1,5 +1,5 @@
+const crypto = require('crypto');
 const { Game, User, UserGame } = require('../database/db');
-const { v4: uuidv4 } = require('uuid');
 
 exports.createGame = async (req, res) => {
   const { name } = req.body;
@@ -8,7 +8,7 @@ exports.createGame = async (req, res) => {
     // 1. Create the game
     const newGame = await Game.create({
       name,
-      inviteCode: uuidv4().slice(0, 8) // Generates a short code, e.g. 'a1b2c3d4'
+      inviteCode: crypto.randomUUID().slice(0, 8) // Generates a short code, e.g. 'a1b2c3d4'
     });
 
     // 2. Add the creator as MASTER

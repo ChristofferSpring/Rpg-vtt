@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
 
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   // extension comes from the checked mimetype, not the client's filename -
   // otherwise someone ships a .svg past the allowlist and it gets served as one
-  filename: (req, file, cb) => cb(null, `${uuidv4()}${MIME_EXTENSIONS[file.mimetype] || ''}`)
+  filename: (req, file, cb) => cb(null, `${crypto.randomUUID()}${MIME_EXTENSIONS[file.mimetype] || ''}`)
 });
 
 const upload = multer({
