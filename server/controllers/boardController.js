@@ -1,4 +1,4 @@
-const { Game, Token, ChatMessage, UserGame, User } = require('../database/db');
+const { Game, Token, ChatMessage, DrawingStroke, UserGame, User } = require('../database/db');
 
 exports.getBoard = async (req, res) => {
   const gameId = Number(req.params.gameId);
@@ -18,10 +18,12 @@ exports.getBoard = async (req, res) => {
       limit: 200
     });
     const messages = recentMessages.reverse();
+    const strokes = await DrawingStroke.findAll({ where: { GameId: gameId } });
 
     res.json({
       tokens: visibleTokens,
       messages,
+      strokes,
       backgroundImageUrl: game.backgroundImageUrl,
       gridWidth: game.gridWidth,
       gridHeight: game.gridHeight

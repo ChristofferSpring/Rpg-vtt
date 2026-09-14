@@ -55,6 +55,12 @@ const ChatMessage = sequelize.define('ChatMessage', {
   text: { type: DataTypes.STRING, allowNull: false }
 });
 
+// 6. A single pencil stroke drawn on a game's map (one mousedown-to-mouseup drag)
+const DrawingStroke = sequelize.define('DrawingStroke', {
+  points: { type: DataTypes.JSON, allowNull: false },
+  color: { type: DataTypes.STRING, allowNull: false, defaultValue: '#ffffff' }
+});
+
 // Associations
 User.belongsToMany(Game, { through: UserGame });
 Game.belongsToMany(User, { through: UserGame });
@@ -73,6 +79,9 @@ Game.hasMany(ChatMessage);
 ChatMessage.belongsTo(Game);
 User.hasMany(ChatMessage);
 ChatMessage.belongsTo(User);
+
+Game.hasMany(DrawingStroke);
+DrawingStroke.belongsTo(Game);
 
 // alter:true rebuilds tables on every boot and blows up once foreign keys
 // exist, so new columns get added by hand below instead. Uses the query
@@ -102,4 +111,4 @@ async function ensureGameColumns() {
 
 const ready = sequelize.sync().then(ensureGameColumns);
 
-module.exports = { sequelize, User, Game, UserGame, Token, ChatMessage, ready };
+module.exports = { sequelize, User, Game, UserGame, Token, ChatMessage, DrawingStroke, ready };

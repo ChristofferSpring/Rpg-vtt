@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { UserGame, Token, ChatMessage } = require('../database/db');
+const { UserGame, Token, ChatMessage, DrawingStroke } = require('../database/db');
 
 const ALLOWED_DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
 const MAX_DICE_COUNT = 20;
@@ -129,6 +129,44 @@ function registerGameSocket(io) {
       } catch (error) {
         console.error('Error in send_message:', error);
         socket.emit('error', { message: 'Error sending message', scope: 'action' });
+      }
+    });
+
+    socket.on('draw_stroke', async ({ points, color }) => {
+      if (!socket.gameId) {
+        socket.emit('error', { message: 'Join a game room first', scope: 'action' });
+        return;
+      }
+      if (!Array.isArray(points) || points.length < 2) return;
+      try {
+        const stroke = await DrawingStroke.create({
+          GameId: socket.gameId,
+          points,
+          color: color || '#ffffff'
+        });
+        io.to(String(socket.gameId)).emit('stroke_created', stroke);
+      } catch (error) {
+        console.error('Error in draw_stroke:', error);
+        socket.emit('error', { message: 'Error saving stroke', scope: 'action' });
+      }
+    });
+
+    socket.on('erase_stroke', async ({ strokeId }) => {
+      if (!socket.gameId) {
+        socket.emit('error', { message: 'Join a game room first', scope: 'action' });
+        return;
+      }
+      try {
+        const stroke = await DrawingStroke.findByPk(strokeId);
+        if (!stroke || stroke.GameId !== socket.gameId) {
+          socket.emit('error', { message: 'Stroke not found in this game', scope: 'action' });
+          return;
+        }
+        await stroke.destroy();
+        io.to(String(socket.gameId)).emit('stroke_deleted', { strokeId });
+      } catch (error) {
+        console.error('Error in erase_stroke:', error);
+        socket.emit('error', { message: 'Error erasing stroke', scope: 'action' });
       }
     });
 

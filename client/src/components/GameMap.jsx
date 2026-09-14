@@ -17,6 +17,7 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [board, setBoard] = useState({
     tokens: [],
+    strokes: [],
     backgroundImageUrl: null,
     gridWidth: 40,
     gridHeight: 30
@@ -31,6 +32,10 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
   const [dragPreview, setDragPreview] = useState(null);
   const [placingToken, setPlacingToken] = useState(null);
   const [ghostPos, setGhostPos] = useState(null);
+  const [pencilMode, setPencilMode] = useState(false);
+  const [eraserMode, setEraserMode] = useState(false);
+  const [pencilColor, setPencilColor] = useState('#ffffff');
+  const [currentStroke, setCurrentStroke] = useState(null);
 
   const isMaster = game.role === 'MASTER';
   const backgroundUrl = board.backgroundImageUrl ? `${BASE_URL}${board.backgroundImageUrl}` : null;
@@ -104,6 +109,14 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
       setBoard((prev) => ({ ...prev, backgroundImageUrl }));
     };
 
+    const handleStrokeCreated = (stroke) => {
+      setBoard((prev) => ({ ...prev, strokes: [...prev.strokes, stroke] }));
+    };
+
+    const handleStrokeDeleted = ({ strokeId }) => {
+      setBoard((prev) => ({ ...prev, strokes: prev.strokes.filter((s) => s.id !== strokeId) }));
+    };
+
     // rejected moves leave the token wherever it got dragged on screen -
     // just refetch to snap it back
     const handleError = () => {
@@ -115,6 +128,8 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
     socket.on('token_updated', handleTokenUpdated);
     socket.on('token_deleted', handleTokenDeleted);
     socket.on('background_updated', handleBackgroundUpdated);
+    socket.on('stroke_created', handleStrokeCreated);
+    socket.on('stroke_deleted', handleStrokeDeleted);
     socket.on('error', handleError);
 
     return () => {
@@ -123,6 +138,8 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
       socket.off('token_updated', handleTokenUpdated);
       socket.off('token_deleted', handleTokenDeleted);
       socket.off('background_updated', handleBackgroundUpdated);
+      socket.off('stroke_created', handleStrokeCreated);
+      socket.off('stroke_deleted', handleStrokeDeleted);
       socket.off('error', handleError);
     };
   }, [canSee, game.id]);
@@ -184,6 +201,27 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
   const toggleRulerMode = () => {
     setRulerMode((prev) => !prev);
     setRulerPoints(null);
+    setPencilMode(false);
+    setEraserMode(false);
+    setCurrentStroke(null);
+    deselectToken();
+  };
+
+  const togglePencilMode = () => {
+    setPencilMode((prev) => !prev);
+    setEraserMode(false);
+    setRulerMode(false);
+    setRulerPoints(null);
+    setCurrentStroke(null);
+    deselectToken();
+  };
+
+  const toggleEraserMode = () => {
+    setEraserMode((prev) => !prev);
+    setPencilMode(false);
+    setRulerMode(false);
+    setRulerPoints(null);
+    setCurrentStroke(null);
     deselectToken();
   };
 
@@ -208,7 +246,7 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
       <Stage
         width={stageSize.width}
         height={stageSize.height}
-        draggable={!rulerMode}
+        draggable={!rulerMode && !pencilMode && !eraserMode}
         onClick={(e) => {
           if (placingToken) {
             const pos = e.target.getStage().getRelativePointerPosition();
@@ -218,15 +256,30 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
           if (e.target === e.target.getStage()) deselectToken();
         }}
         onMouseDown={(e) => {
-          if (!rulerMode) return;
           const pos = e.target.getStage().getRelativePointerPosition();
+          if (pencilMode) {
+            setCurrentStroke({ points: [pos.x, pos.y], color: pencilColor });
+            return;
+          }
+          if (!rulerMode) return;
           setRulerPoints({ start: pos, end: pos });
         }}
         onMouseMove={(e) => {
           const pos = e.target.getStage().getRelativePointerPosition();
           if (placingToken) setGhostPos(pos);
+          if (pencilMode && currentStroke) {
+            setCurrentStroke((prev) => ({ ...prev, points: [...prev.points, pos.x, pos.y] }));
+            return;
+          }
           if (!rulerMode || !rulerPoints) return;
           setRulerPoints((prev) => ({ ...prev, end: pos }));
+        }}
+        onMouseUp={() => {
+          if (!pencilMode || !currentStroke) return;
+          if (currentStroke.points.length >= 4) {
+            getSocket()?.emit('draw_stroke', currentStroke);
+          }
+          setCurrentStroke(null);
         }}
         onWheel={(e) => {
           e.evt.preventDefault();
@@ -244,16 +297,39 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
             <KonvaImage image={backgroundImage} width={mapWidth} height={mapHeight} onClick={handleBackgroundClick} />
           )}
           {gridLines}
+          {board.strokes.map((stroke) => (
+            <Line
+              key={stroke.id}
+              points={stroke.points}
+              stroke={stroke.color}
+              strokeWidth={3}
+              lineCap="round"
+              lineJoin="round"
+              hitStrokeWidth={20}
+              listening={eraserMode}
+              onClick={eraserMode ? () => getSocket()?.emit('erase_stroke', { strokeId: stroke.id }) : undefined}
+            />
+          ))}
+          {currentStroke && (
+            <Line
+              points={currentStroke.points}
+              stroke={currentStroke.color}
+              strokeWidth={3}
+              lineCap="round"
+              lineJoin="round"
+              listening={false}
+            />
+          )}
           {board.tokens.filter(canSee).map((token) => (
             <Token
               key={token.id}
               token={token}
               cellSize={CELL_SIZE}
-              draggable={!rulerMode && !placingToken && (isMaster || token.ownerId === user.userId)}
+              draggable={!rulerMode && !placingToken && !pencilMode && !eraserMode && (isMaster || token.ownerId === user.userId)}
               selected={token.id === pickedTokenId}
               onMove={handleMoveToken}
               onDragMove={handleDragMove}
-              onSelect={isMaster && !rulerMode && !placingToken ? (t) => setPickedTokenId(t.id) : undefined}
+              onSelect={isMaster && !rulerMode && !placingToken && !pencilMode && !eraserMode ? (t) => setPickedTokenId(t.id) : undefined}
             />
           ))}
           {pickedToken && !editingToken && (
@@ -289,6 +365,12 @@ export default function GameMap({ user, game, onJoinGame, onlineUsers }) {
         placingToken={placingToken}
         onCancelPlacing={handleCancelPlacing}
         onStartPlacing={handleStartPlacing}
+        pencilMode={pencilMode}
+        onTogglePencil={togglePencilMode}
+        eraserMode={eraserMode}
+        onToggleEraser={toggleEraserMode}
+        pencilColor={pencilColor}
+        onPencilColorChange={setPencilColor}
       />
     </div>
   );
@@ -360,14 +442,26 @@ function TokenBubbles({ token, cellSize, onGear }) {
 
 function FloatingMenu({
   onExit, isMaster, game, selectedToken, onCloseEdit, rulerMode, onToggleRuler,
-  placingToken, onCancelPlacing, onStartPlacing
+  placingToken, onCancelPlacing, onStartPlacing,
+  pencilMode, onTogglePencil, eraserMode, onToggleEraser, pencilColor, onPencilColorChange
 }) {
   const [open, setOpen] = React.useState(false);
-  const isOpen = (open || !!selectedToken) && !rulerMode && !placingToken;
+  const drawingMode = pencilMode || eraserMode;
+  const isOpen = (open || !!selectedToken) && !rulerMode && !placingToken && !drawingMode;
 
   const handleToggleRuler = () => {
     setOpen(false);
     onToggleRuler();
+  };
+
+  const handleTogglePencil = () => {
+    setOpen(false);
+    onTogglePencil();
+  };
+
+  const handleToggleEraser = () => {
+    setOpen(false);
+    onToggleEraser();
   };
 
   return (
@@ -375,7 +469,8 @@ function FloatingMenu({
       {isOpen && (
         <div style={{
             marginBottom: '10px', background: 'white', color: 'black',
-            padding: '10px', borderRadius: '5px', width: '200px'
+            padding: '10px', borderRadius: '5px', width: '200px',
+            maxHeight: 'calc(100vh - 100px)', overflowY: 'auto'
         }}>
           {selectedToken ? (
             <EditTokenPanel game={game} token={selectedToken} onClose={onCloseEdit} />
@@ -384,6 +479,18 @@ function FloatingMenu({
               <div>Tools</div>
               <button onClick={handleToggleRuler} style={{ width: '100%', marginBottom: '5px' }}>
                 Ruler
+              </button>
+              <button onClick={handleTogglePencil} style={{ width: '100%', marginBottom: '5px' }}>
+                Pencil
+              </button>
+              <input
+                type="color"
+                value={pencilColor}
+                onChange={(e) => onPencilColorChange(e.target.value)}
+                style={{ width: '100%', marginBottom: '5px' }}
+              />
+              <button onClick={handleToggleEraser} style={{ width: '100%', marginBottom: '5px' }}>
+                Eraser
               </button>
               <DicePanel />
               {isMaster && <CreateTokenPanel game={game} onStartPlacing={onStartPlacing} />}
@@ -399,17 +506,19 @@ function FloatingMenu({
         onClick={() => {
           if (placingToken) return onCancelPlacing();
           if (rulerMode) return onToggleRuler();
+          if (pencilMode) return onTogglePencil();
+          if (eraserMode) return onToggleEraser();
           if (selectedToken) return onCloseEdit();
           setOpen(!open);
         }}
         style={{
             width: '50px', height: '50px', borderRadius: '50%',
             border: 'none', color: 'white', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
-            background: placingToken ? '#dd6b20' : rulerMode ? '#3182ce' : '#e53e3e',
-            fontSize: placingToken || rulerMode ? '14px' : '24px'
+            background: placingToken ? '#dd6b20' : (rulerMode || drawingMode) ? '#3182ce' : '#e53e3e',
+            fontSize: placingToken || rulerMode || drawingMode ? '14px' : '24px'
         }}
       >
-        {placingToken ? 'Cancel' : rulerMode ? 'Stop' : (isOpen ? 'x' : '+')}
+        {placingToken ? 'Cancel' : (rulerMode || drawingMode) ? 'Stop' : (isOpen ? 'x' : '+')}
       </button>
     </div>
   );
