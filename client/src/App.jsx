@@ -68,8 +68,7 @@ function App() {
   if (!currentGame) {
     return (
       <div className="app-container">
-         <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Log out</button>
-         <TopBar username={user.username}  />
+         <TopBar username={user.username} onLogout={handleLogout} />
 
          <Dashboard
             user={user}
@@ -81,11 +80,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <div style={{position: 'absolute', top: 10, right: 10, zIndex: 20}}>
-          <button onClick={handleLogout} style={{background: 'red', color: 'white', border: 'none', padding: '5px'}}>Log out</button>
-      </div>
-
-      <TopBar username={user.username} role={currentGame.role} />
+      <TopBar username={user.username} role={currentGame.role} onLogout={handleLogout} />
 
       <div className="main-content">
         <GameMap
