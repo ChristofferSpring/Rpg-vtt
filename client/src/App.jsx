@@ -80,7 +80,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <TopBar username={user.username} role={currentGame.role} gameId={currentGame.id} onLogout={handleLogout} />
+      <TopBar username={user.username} role={currentGame.role} inviteCode={currentGame.inviteCode} onLogout={handleLogout} />
 
       <div className="main-content">
         <GameMap

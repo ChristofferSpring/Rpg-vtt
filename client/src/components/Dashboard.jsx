@@ -126,7 +126,7 @@ export default function Dashboard({ user, onJoinGame }) {
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
               type="text"
-              placeholder="Code (UUID)"
+              placeholder="Invite code"
               style={{ width: '100%', marginBottom: '10px', padding: '5px' }}
             />
             <button onClick={handleJoinGame} style={{ width: '100%', padding: '5px', cursor: 'pointer' }}>Join</button>

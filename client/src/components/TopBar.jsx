@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { version } from '../../package.json';
 
-export default function TopBar({ username, role, gameId, onLogout }) {
+export default function TopBar({ username, role, inviteCode, onLogout }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopyGameId = async () => {
+  const handleCopyInviteCode = async () => {
     try {
-      await navigator.clipboard.writeText(gameId);
+      await navigator.clipboard.writeText(inviteCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
-      console.error('Error copying game id:', err);
+      console.error('Error copying invite code:', err);
     }
   };
 
@@ -20,12 +20,12 @@ export default function TopBar({ username, role, gameId, onLogout }) {
         RPG VTT <span style={{ fontSize: '0.6em', fontWeight: 'normal', opacity: 0.5 }}>v{version}</span>
       </h3>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {gameId && (
+        {inviteCode && (
           <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.85em', opacity: 0.8 }}>
-            Room ID: <code>{gameId}</code>
+            Invite code: <code>{inviteCode}</code>
             <button
-              onClick={handleCopyGameId}
-              title="Copy room ID to invite someone"
+              onClick={handleCopyInviteCode}
+              title="Copy invite code to invite someone"
               style={{ cursor: 'pointer', background: '#4a5568', color: 'white', border: 'none', padding: '3px 8px', borderRadius: '3px' }}
             >
               {copied ? 'Copied!' : 'Copy'}
